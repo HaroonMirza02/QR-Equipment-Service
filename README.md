@@ -1,4 +1,4 @@
-# QR Equipment Service — Backend
+# QR Equipment Service
 
 Industrial "scan a machine → see its service picture" system. Every piece of equipment has a QR code. Scanning it opens a mobile-friendly profile showing installation info, maintenance history, fault history, current status, assigned technician, and next maintenance date.
 
@@ -21,7 +21,7 @@ MongoDB must be running and reachable before you start the server or run the see
 ## Install
 
 ```bash
-cd "QR Equipment Service"
+cd "QR-Equipment-Service"
 npm install
 ```
 
@@ -45,6 +45,7 @@ copy .env.example .env
 | `BCRYPT_ROUNDS` | No | bcrypt salt rounds. Minimum 12. Default: `12` |
 | `QR_STORAGE_PATH` | No | Relative path for QR PNG files. Default: `public/qr` |
 | `PUBLIC_SCAN_RATE_LIMIT` | No | Max requests/min/IP on the public scan endpoint. Default: `60` |
+| `ENABLE_DEMO_DIRECTORY` | No | Enables the QR label lab in production. It is automatically available outside production. Default: `false` |
 | `NODE_ENV` | No | `development` \| `production` \| `test` |
 
 ---
@@ -66,7 +67,7 @@ Seeded credentials:
 | tech2@meridian.example | Tech1234! | Technician |
 | viewer@meridian.example | View1234! | Viewer |
 
-Equipment includes: 10 operational, 2 under maintenance, 2 faulty, 3 overdue, 1 private (not public-visible), 1 retired (no successor), 1 replaced (PUMP-006 → PUMP-007 chain).
+Equipment includes: 12 operational, 2 under maintenance, 2 faulty, 7 overdue (including faulty and under-maintenance assets), 1 private (not public-visible), 1 retired (no successor), and 1 replaced (PUMP-006 → PUMP-007 chain).
 
 ---
 
@@ -84,6 +85,25 @@ The server starts on the port specified in `.env` (default 3000).
 
 Static QR images are served at: `GET /static/qr/<token>.png`
 
+### Open the industrial demo
+
+Visit `http://localhost:3000/demo` after seeding. The QR Label Lab contains a
+printable test set covering operational, overdue, faulty, under-maintenance,
+retired, and replaced equipment. Each QR opens `/equipment/<token>`, the
+mobile-first equipment passport.
+
+### Open the admin portal
+
+Visit `http://localhost:3000/admin` and sign in with the seeded administrator
+account. The portal provides the complete equipment register, status/category
+filters, create and edit forms, live label preview, existing QR retrieval,
+PNG download, print layout, mobile-profile testing, QR regeneration and
+equipment retirement.
+
+Equipment created in the portal is saved first, then its stable QR is issued
+and shown immediately. This prevents downloadable labels from pointing to a
+record that was never saved.
+
 ---
 
 ## Run the Tests
@@ -100,6 +120,16 @@ This runs `src/scripts/test-runner.js` — a self-contained HTTP test script. It
 3. Run the tests in a second terminal: `npm test`
 
 The script exercises every endpoint including all error paths. Results are printed to stdout with PASS/FAIL per test case.
+
+To decode and verify the actual generated QR PNG files:
+
+```bash
+npm run test:qr
+```
+
+The verifier checks current and historical labels and confirms every image
+contains the expected stable mobile profile URL. Physical phone/print checks
+are documented in `DEMO-IMPLEMENTATION.md` and shown inside `/demo`.
 
 ---
 
@@ -158,6 +188,11 @@ src/
     └── test-runner.js        Automated test script
 
 public/
+├── app/
+│   ├── index.html            Mobile equipment passport
+│   ├── profile.js            Public profile + lifecycle state rendering
+│   ├── demo.html             Printable industrial QR Label Lab
+│   └── demo.js               Demo directory and filters
 └── qr/                       Generated QR PNG files (auto-created)
 
 architecture/
@@ -183,6 +218,7 @@ Paginated list responses add:
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/public/scan/:qrToken` | Resolve QR code to equipment profile |
+| GET | `/api/public/demo-equipment` | Controlled demo label directory (non-production by default) |
 
 ### Auth
 | Method | Path | Description |
@@ -195,6 +231,7 @@ Paginated list responses add:
 | GET | `/api/equipment` | All | List equipment |
 | GET | `/api/equipment/overdue` | All | Overdue equipment |
 | GET | `/api/equipment/:id` | All | Single equipment |
+| GET | `/api/equipment/:id/qr` | Admin | Retrieve the active QR label and profile URL |
 | POST | `/api/equipment` | Admin | Create equipment |
 | PATCH | `/api/equipment/:id` | Admin | Update equipment |
 | POST | `/api/equipment/:id/retire` | Admin | Retire equipment |

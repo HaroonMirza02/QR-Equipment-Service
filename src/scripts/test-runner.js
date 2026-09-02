@@ -365,6 +365,20 @@ async function testEquipmentCreate() {
   activeQrToken = match ? match[1] : '';
   assert('Create equipment → qrCodeUrl contains 64-char token', !!activeQrToken);
 
+  // Existing QR retrieval for the admin portal
+  res = await request('GET', `/api/equipment/${newEquipId}/qr`, null, {
+    Authorization: `Bearer ${adminToken}`,
+  });
+  assert('Get existing equipment QR → 200', res.status === 200, `got ${res.status}`);
+  assert('Get existing equipment QR → has qrCodeUrl', typeof res.body?.data?.qrCodeUrl === 'string');
+  assert('Get existing equipment QR → has profileUrl', typeof res.body?.data?.profileUrl === 'string');
+  assert('Get existing equipment QR → code matches', res.body?.data?.equipmentCode === 'TEST-NEW-001');
+
+  res = await request('GET', `/api/equipment/${newEquipId}/qr`, null, {
+    Authorization: `Bearer ${viewerToken}`,
+  });
+  assertBody('Viewer cannot retrieve printable QR', res, 403, 'INSUFFICIENT_ROLE');
+
   // 409 — duplicate code
   res = await request(
     'POST',
@@ -892,10 +906,11 @@ async function testPublicScan() {
 
   // 200 — active equipment (use token captured from create test)
   if (activeQrToken) {
-    // The equipment was retired during testQRLifecycle, so this should now
-    // return QR_NOT_FOUND (token was nulled on retirement)
+    // The equipment was retired during testQRLifecycle. Its printed label now
+    // resolves to an explicit safe tombstone.
     res = await request('GET', `/api/public/scan/${activeQrToken}`);
-    assertBody('Scan retired equipment token (after retire)', res, 404, 'QR_NOT_FOUND');
+    assert('Scan retired equipment token → 200', res.status === 200, `got ${res.status}`);
+    assert('Scan retired equipment token → QR_RETIRED', res.body?.data?.code === 'QR_RETIRED');
   }
 
   // ── Scan a LIVE operational item ──────────────────────────────────────────
@@ -930,6 +945,9 @@ async function testPublicScan() {
   assert('Scan → has daysOverdue', res.body?.data?.daysOverdue !== undefined);
   assert('Scan → has maintenanceSummary', typeof res.body?.data?.maintenanceSummary === 'object');
   assert('Scan → has faultSummary', typeof res.body?.data?.faultSummary === 'object');
+  assert('Scan → has maintenanceHistory', Array.isArray(res.body?.data?.maintenanceHistory));
+  assert('Scan → has faultHistory', Array.isArray(res.body?.data?.faultHistory));
+  assert('Scan → has assignedTechnician field', 'assignedTechnician' in (res.body?.data || {}));
   assert('Scan → qrToken not exposed', res.body?.data?.qrToken === undefined);
   assert('Scan → id not exposed', res.body?.data?.id === undefined);
   assert('Scan → assignedTechnicianId not exposed', res.body?.data?.assignedTechnicianId === undefined);
@@ -961,12 +979,9 @@ async function testPublicScan() {
     assert('Scan private → code QR_NOT_PUBLIC', res.body?.data?.code === 'QR_NOT_PUBLIC');
   }
 
-  // ── Scan seeded retired equipment (PUMP-006 replaced by PUMP-007) ─────────
-  // We cannot get qrTokens from the API (stripped). But the seeded retired
-  // records have qrToken = null, so any scan would 404. This is confirmed
-  // correct behaviour (§6.2). We verify it using the known fake-token path.
+  // A valid-format token that never existed remains an unrecognized QR.
   res = await request('GET', `/api/public/scan/${'a'.repeat(64)}`);
-  assertBody('Scan retired/replaced token (simulated) → 404', res, 404, 'QR_NOT_FOUND');
+  assertBody('Scan unknown valid-format token → 404', res, 404, 'QR_NOT_FOUND');
 }
 
 async function testSeedOverdueItems() {

@@ -23,6 +23,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const QRCode = require('qrcode');
+const { connectDB } = require('../config/database');
 
 const Tenant = require('../models/Tenant');
 const User = require('../models/User');
@@ -57,7 +58,7 @@ async function genToken() {
 async function genQRImage(token) {
   if (!fs.existsSync(QR_DIR)) fs.mkdirSync(QR_DIR, { recursive: true });
   const file = path.join(QR_DIR, `${token}.png`);
-  const url = `${BASE_URL}/api/public/scan/${token}`;
+  const url = `${BASE_URL}/equipment/${token}`;
   await QRCode.toFile(file, url, { type: 'png', errorCorrectionLevel: 'M', margin: 2, width: 300 });
   return `${BASE_URL}/static/qr/${token}.png`;
 }
@@ -65,8 +66,8 @@ async function genQRImage(token) {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function seed() {
-  await mongoose.connect(process.env.MONGODB_URI);
-  console.log('[seed] connected to MongoDB');
+  await connectDB();
+  console.log(`[seed] connected to MongoDB database: ${mongoose.connection.name}`);
 
   // ── Tenant ────────────────────────────────────────────────────────────────
   let tenant = await Tenant.findOne({ slug: 'meridian-industrial' });
@@ -424,6 +425,7 @@ async function seed() {
   // even in sparse unique indexes, so null cannot be used for retired records).
   // We first create with a placeholder token, then overwrite after _id is known.
   const pump005token = await genToken();
+  await genQRImage(pump005token);
   const pump005 = await Equipment.create({
     tenantId,
     qrToken: pump005token,  // will be overwritten below with sentinel
@@ -454,6 +456,7 @@ async function seed() {
 
   // 17. PUMP-006 (OLD — REPLACED by PUMP-007)
   const pump006token = await genToken();
+  await genQRImage(pump006token);
   const pump006 = await Equipment.create({
     tenantId,
     qrToken: pump006token,  // will be overwritten below with sentinel
@@ -768,11 +771,11 @@ async function seed() {
   console.log('  Users:       4  (admin / tech1 / tech2 / viewer)');
   console.log('  Technicians: 4');
   console.log('  Equipment:   18');
-  console.log('    Operational:       10');
+  console.log('    Operational:       12');
   console.log('    Under Maintenance:  2  (GEN-002, COMP-003)');
   console.log('    Faulty:            2  (PUMP-003, HVAC-003)');
   console.log('    Retired:           2  (PUMP-005 retired, PUMP-006 replaced)');
-  console.log('    Overdue:           3  (PUMP-002, COMP-002, HVAC-002)');
+  console.log('    Overdue:           7  (includes faulty and under-maintenance assets)');
   console.log('    Private (not public visible): 1  (GEN-003)');
   console.log('    Replaced chain:    PUMP-006 → PUMP-007');
   console.log('[seed] ─────────────────────────────────────────────────────\n');

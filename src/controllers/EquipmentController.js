@@ -52,6 +52,15 @@ async function getById(req, res, next) {
   }
 }
 
+async function getQR(req, res, next) {
+  try {
+    const qr = await EquipmentService.getQR(req.user.tenantId, req.params.id);
+    return success(res, qr);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function create(req, res, next) {
   try {
     const equipment = await EquipmentService.create(req.user.tenantId, req.body);
@@ -112,4 +121,4 @@ async function regenerateQR(req, res, next) {
   }
 }
 
-module.exports = { list, listOverdue, getById, create, patch, retire, replace, regenerateQR };
+module.exports = { list, listOverdue, getById, getQR, create, patch, retire, replace, regenerateQR };

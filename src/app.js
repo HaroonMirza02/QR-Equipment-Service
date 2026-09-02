@@ -32,6 +32,28 @@ if (process.env.NODE_ENV !== 'test') {
 // ── Static files (QR images) ─────────────────────────────────────────────────
 app.use('/static', express.static(path.join(__dirname, '..', 'public')));
 
+// ── Mobile QR landing page ───────────────────────────────────────────────────
+// QR labels point here. The page then resolves the opaque token through the
+// public API, keeping presentation and API concerns separate.
+app.get('/equipment/:qrToken', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app', 'index.html'));
+});
+
+app.get('/demo', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app', 'demo.html'));
+});
+
+app.get('/admin', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app', 'admin.html'));
+});
+
+// Friendly root for demos and accidental direct visits.
+app.get('/', (_req, res) => {
+  const demoEnabled = process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_DIRECTORY === 'true';
+  if (demoEnabled) return res.redirect('/demo');
+  return res.sendFile(path.join(__dirname, '..', 'public', 'app', 'index.html'));
+});
+
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/public', publicRouter);
 app.use('/api/auth', authRouter);

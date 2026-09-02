@@ -30,14 +30,15 @@ This document confirms implementation status against ARCHITECTURE.md Section 5 f
 **Status:** MATCHES SPEC
 
 - 422 `VALIDATION_ERROR` — token not matching `/^[0-9a-f]{64}$/` (format check before DB hit)
-- 404 `QR_NOT_FOUND` — token not found in active `qrToken` field
-- 200 active profile — all public-safe fields per §3 access matrix, including `isOverdue` + `daysOverdue`
+- 404 `QR_NOT_FOUND` — token not found in either the current token or immutable token history
+- 200 active profile — public-safe installation fields, status, overdue state, assigned technician name/specialty, and the latest ten maintenance and fault records
 - 200 `QR_RETIRED` — equipment retired, `successor: null`
 - 200 `QR_REPLACED` — equipment replaced, successor name + scan URL included
+- 200 `QR_REVOKED` — rotated historical label; the new token is deliberately not exposed
 - 200 `QR_NOT_PUBLIC` — `isPublicVisible: false`
 - Rate limited: 60 req/min/IP via `express-rate-limit`
 
-**Implementation note on retired/replaced scan path:** Per §4.2, on retirement `qrToken` is set to `null` and moved to `qrTokenHistory`. Since `null` values are excluded from the sparse unique index, a lookup by the old token value will find no document — returning 404 (`QR_NOT_FOUND`). The 200 tombstone responses (QR_RETIRED / QR_REPLACED) are reachable only if the document still has a non-null `qrToken` value with `qrStatus` of `revoked` or `replaced`. This is an edge-case path that would occur if a future extension retains the token instead of nulling it. Both paths are implemented. See §6.2 of ARCHITECTURE.md — this behaviour is correct and intentional.
+**Implementation note on retired/replaced scan path:** On retirement or replacement, the current token is moved into `qrTokenHistory` and the indexed field receives a non-scannable unique sentinel. Public resolution checks the current token first, then history. Historical retired/replaced labels return a minimal tombstone; rotated labels on active equipment return `QR_REVOKED` and never reveal the replacement token.
 
 ---
 
@@ -62,6 +63,18 @@ This document confirms implementation status against ARCHITECTURE.md Section 5 f
 - Filter: `nextMaintenanceDate < now`, not null, status ≠ Retired
 - Paginated, sorted by `nextMaintenanceDate ASC` (most overdue first)
 - All items have `isOverdue: true`, `daysOverdue > 0`
+
+---
+
+## GET /api/equipment/:id/qr
+
+**Status:** IMPLEMENTED FOR ADMIN PORTAL
+
+- Requires an Admin JWT.
+- Returns the current `qrCodeUrl` and human-facing `profileUrl` with equipment
+  code/name so existing labels can be viewed, downloaded, printed and tested.
+- Does not expose `qrToken` as a standalone response field.
+- Retired or inactive labels return `409 QR_NOT_ACTIVE`.
 
 ---
 

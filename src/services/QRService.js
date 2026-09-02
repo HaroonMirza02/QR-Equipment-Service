@@ -56,7 +56,9 @@ class QRService {
     const filename = `${token}.png`;
     const filepath = path.join(dir, filename);
 
-    const scanUrl = `${getBaseUrl()}/api/public/scan/${token}`;
+    // Encode the human-facing mobile route, not the JSON API endpoint. The
+    // opaque token remains stable for the lifetime of the equipment label.
+    const scanUrl = `${getBaseUrl()}/equipment/${token}`;
 
     await QRCode.toFile(filepath, scanUrl, {
       type: 'png',

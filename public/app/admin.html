@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b1f26" />
+    <meta name="description" content="PlantOps equipment and QR administration portal." />
+    <title>Admin Portal · PlantOps</title>
+    <link rel="stylesheet" href="/static/app/admin.css" />
+    <link rel="stylesheet" href="/static/app/admin-portal.css" />
+    <script src="/static/app/admin.js" defer></script>
+  </head>
+  <body>
+    <main id="login-view" class="login-layout">
+      <section class="login-brand">
+        <a class="admin-brand" href="/demo" aria-label="PlantOps QR label lab">
+          <span class="admin-brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span><strong>PlantOps</strong><small>Asset operations</small></span>
+        </a>
+        <div class="login-message">
+          <p class="admin-eyebrow">Equipment administration</p>
+          <h1>Every asset.<br />One reliable record.</h1>
+          <p>Issue scan-ready equipment labels, maintain your asset register, and keep lifecycle ownership clear.</p>
+        </div>
+        <div class="login-points" aria-label="Portal capabilities">
+          <span>Secure QR issuance</span><span>Live asset records</span><span>Print-ready labels</span>
+        </div>
+      </section>
+
+      <section class="login-panel">
+        <form id="login-form" class="login-form">
+          <div>
+            <p class="admin-eyebrow">Authorized access</p>
+            <h2>Sign in to PlantOps</h2>
+            <p>Use an administrator account to manage equipment and QR labels.</p>
+          </div>
+          <label>Email address<input id="login-email" name="email" type="email" autocomplete="username" value="admin@meridian.example" required /></label>
+          <label>Password<input id="login-password" name="password" type="password" autocomplete="current-password" required /></label>
+          <div id="login-error" class="form-error" role="alert" hidden></div>
+          <button class="primary-button full" type="submit">Sign in</button>
+          <p class="demo-hint">Demo administrator: <strong>admin@meridian.example</strong> / <strong>Admin1234!</strong></p>
+        </form>
+      </section>
+    </main>
+
+    <div id="portal-view" class="portal-layout" hidden>
+      <aside class="sidebar">
+        <a class="admin-brand sidebar-brand" href="/admin"><span class="admin-brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span><strong>PlantOps</strong><small>Asset operations</small></span></a>
+        <nav aria-label="Administration"><button class="nav-item active" type="button"><span>▦</span>Equipment</button><a class="nav-item" href="/demo"><span>⌗</span>QR Label Lab</a></nav>
+        <div class="sidebar-foot"><span class="sidebar-avatar" id="sidebar-avatar">AV</span><span><strong id="sidebar-name">Administrator</strong><small>Admin access</small></span><button id="logout-button" type="button" aria-label="Sign out">↗</button></div>
+      </aside>
+
+      <section class="portal-main">
+        <header class="portal-header">
+          <div><p class="admin-eyebrow">Asset register</p><h1>Equipment</h1></div>
+          <button id="open-create" class="primary-button" type="button"><span>＋</span>Add equipment</button>
+        </header>
+        <div class="metric-row" aria-label="Equipment summary">
+          <article><span>Total equipment</span><strong id="metric-total">—</strong><small>Registered assets</small></article>
+          <article><span>Operational</span><strong id="metric-operational">—</strong><small>Available for service</small></article>
+          <article class="metric-attention"><span>Needs attention</span><strong id="metric-attention">—</strong><small>Faulty or overdue</small></article>
+          <article><span>Under maintenance</span><strong id="metric-maintenance">—</strong><small>Work in progress</small></article>
+        </div>
+        <section class="inventory-panel">
+          <div class="inventory-toolbar">
+            <label class="search-field"><span>⌕</span><input id="equipment-search" type="search" placeholder="Search code, name or location" /></label>
+            <select id="status-filter" aria-label="Filter by status"><option value="">All statuses</option><option>Operational</option><option>Under Maintenance</option><option>Faulty</option><option>Retired</option></select>
+            <select id="category-filter" aria-label="Filter by category"><option value="">All categories</option><option>Pump</option><option>Generator</option><option>Compressor</option><option>HVAC</option><option>Electrical</option><option>Other</option></select>
+          </div>
+          <div id="inventory-content" class="inventory-empty">Sign in to load the equipment register.</div>
+        </section>
+      </section>
+    </div>
+
+    <dialog id="equipment-dialog" class="admin-dialog equipment-dialog">
+      <form id="equipment-form" method="dialog">
+        <header class="dialog-header">
+          <div><p class="admin-eyebrow" id="equipment-form-eyebrow">New asset</p><h2 id="equipment-form-title">Add equipment</h2><p id="equipment-form-copy">Create the record first; its stable QR will be issued immediately.</p></div>
+          <button class="icon-button" type="button" data-close-dialog="equipment-dialog" aria-label="Close equipment form">×</button>
+        </header>
+        <div class="equipment-form-layout">
+          <div class="form-sections">
+            <section class="form-section">
+              <div class="form-section-heading"><span>01</span><div><h3>Equipment identity</h3><p>The identification printed on the physical asset.</p></div></div>
+              <div class="field-grid two">
+                <label>Equipment code <input id="field-code" name="equipmentCode" required placeholder="PUMP-021" /></label>
+                <label>Equipment name <input id="field-name" name="name" required placeholder="Cooling Water Pump" /></label>
+                <label>Category <select id="field-category" name="category" required><option value="">Select category</option><option>Pump</option><option>Generator</option><option>Compressor</option><option>HVAC</option><option>Electrical</option><option>Other</option></select></label>
+                <label>Serial number <input id="field-serial" name="serialNumber" placeholder="Optional" /></label>
+                <label>Manufacturer <input id="field-manufacturer" name="manufacturer" required placeholder="Grundfos" /></label>
+                <label>Model <input id="field-model" name="model" required placeholder="CM5-6" /></label>
+              </div>
+            </section>
+            <section class="form-section">
+              <div class="form-section-heading"><span>02</span><div><h3>Installation and service</h3><p>Location, ownership and maintenance cadence.</p></div></div>
+              <div class="field-grid three">
+                <label>Site <input id="field-site" name="site" required placeholder="Plant A" /></label>
+                <label>Building <input id="field-building" name="building" required placeholder="Block 2" /></label>
+                <label>Zone <input id="field-zone" name="zone" required placeholder="Zone 1" /></label>
+              </div>
+              <div class="field-grid two compact-top">
+                <label>Installation date <input id="field-installation" name="installationDate" type="date" required /></label>
+                <label>Maintenance interval <span class="input-suffix"><input id="field-interval" name="maintenanceIntervalDays" type="number" min="1" step="1" required value="90" /><span>days</span></span></label>
+                <label>Assigned technician <select id="field-technician" name="assignedTechnicianId"><option value="">Unassigned</option></select></label>
+                <label class="checkbox-field"><input id="field-public" name="isPublicVisible" type="checkbox" checked /><span><strong>Public scan profile</strong><small>Allow the equipment QR to open without signing in.</small></span></label>
+              </div>
+              <label class="wide-field">Internal notes <textarea id="field-notes" name="notes" rows="3" placeholder="Optional operational notes"></textarea></label>
+            </section>
+          </div>
+          <aside class="label-preview-panel">
+            <div class="preview-heading"><p class="admin-eyebrow">Live label preview</p><span>Updates as you type</span></div>
+            <div class="equipment-label-preview">
+              <div class="preview-qr"><div class="preview-qr-grid" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><small>Issued after saving</small></div>
+              <div class="preview-copy"><span class="preview-status">Operational</span><strong id="preview-code">EQUIPMENT CODE</strong><p id="preview-name">Equipment name</p><small id="preview-location">Site · Building · Zone</small><b>Scan for service record</b></div>
+            </div>
+            <div class="preview-note"><span>✓</span><p><strong>Stable by design</strong>The QR stays unchanged when equipment details or service records are updated.</p></div>
+          </aside>
+        </div>
+        <footer class="dialog-footer"><div id="equipment-form-error" class="form-error" role="alert" hidden></div><button class="secondary-button" type="button" data-close-dialog="equipment-dialog">Cancel</button><button id="equipment-submit" class="primary-button" type="submit">Save equipment & generate QR</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="qr-dialog" class="admin-dialog qr-dialog">
+      <div class="qr-result">
+        <header class="dialog-header"><div><p class="admin-eyebrow">Equipment label</p><h2 id="qr-title">QR ready</h2><p id="qr-subtitle">The label is linked to the live equipment record.</p></div><button class="icon-button" type="button" data-close-dialog="qr-dialog" aria-label="Close QR dialog">×</button></header>
+        <div class="qr-result-body">
+          <div class="print-label" id="print-label"><div class="print-qr"><img id="qr-image" alt="Equipment QR code" /><small>Scan for service record</small></div><div class="print-copy"><span>PlantOps equipment</span><strong id="qr-code">—</strong><p id="qr-name">—</p><small>Verified asset record</small></div></div>
+          <div class="qr-actions-copy"><span class="success-mark">✓</span><h3>Label is scan-ready</h3><p>Download the PNG or print the complete equipment label. Test the mobile profile before applying it to the asset.</p><a id="qr-profile-link" class="profile-url" target="_blank" rel="noopener">Open mobile profile ↗</a></div>
+        </div>
+        <footer class="dialog-footer qr-footer"><button id="regenerate-qr" class="text-button danger-text" type="button">Regenerate QR</button><span></span><button id="print-qr" class="secondary-button" type="button">Print label</button><a id="download-qr" class="primary-button" download>Download PNG</a></footer>
+      </div>
+    </dialog>
+
+    <dialog id="confirm-dialog" class="confirm-dialog">
+      <div class="confirm-symbol" id="confirm-symbol">!</div><p class="admin-eyebrow" id="confirm-eyebrow">Confirm action</p><h2 id="confirm-title">Are you sure?</h2><p id="confirm-message"></p><div class="confirm-actions"><button id="confirm-cancel" class="secondary-button" type="button">Cancel</button><button id="confirm-accept" class="danger-button" type="button">Confirm</button></div>
+    </dialog>
+
+    <div id="toast-region" class="toast-region" aria-live="polite"></div>
+  </body>
+</html>

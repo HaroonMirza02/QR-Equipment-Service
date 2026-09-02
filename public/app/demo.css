@@ -1,0 +1,78 @@
+.demo-shell { width: min(100%, 1180px); margin: 0 auto; padding: 34px 18px 56px; }
+.demo-header { position: relative; }
+.header-print { min-height: 38px; padding: 0 14px; border: 1px solid rgba(255,255,255,.25); background: transparent; color: #fff; font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+.header-print:hover { border-color: #52c7b7; color: #52c7b7; }
+.demo-intro { display: grid; gap: 26px; align-items: end; padding: 12px 0 34px; border-bottom: 1px solid var(--line-strong); }
+.demo-intro h1 { margin: 4px 0 12px; max-width: 620px; font-size: clamp(38px, 9vw, 66px); line-height: .98; letter-spacing: -.055em; }
+.demo-lede { max-width: 620px; margin: 0; color: var(--muted); line-height: 1.6; font-size: 14px; }
+.demo-metric { justify-self: start; min-width: 130px; padding-left: 15px; border-left: 3px solid var(--teal); }
+.demo-metric strong, .demo-metric span { display: block; }
+.demo-metric strong { font-size: 34px; letter-spacing: -.04em; }
+.demo-metric span { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+.test-strip { display: grid; margin: 20px 0 42px; background: var(--navy); color: white; }
+.test-strip > div { display: grid; grid-template-columns: 35px 1fr; gap: 11px; padding: 18px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.test-strip > div:last-child { border-bottom: 0; }
+.test-strip span { color: #52c7b7; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.test-strip p { margin: 0; color: #aebdc1; font-size: 11px; line-height: 1.5; }
+.test-strip strong { display: block; margin-bottom: 2px; color: #fff; font-size: 12px; }
+.demo-toolbar { display: flex; flex-direction: column; gap: 17px; margin-bottom: 18px; }
+.demo-toolbar h2 { margin: 0; font-size: 20px; letter-spacing: -.025em; }
+.demo-toolbar p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.filter-group { display: inline-flex; align-self: flex-start; border: 1px solid var(--line-strong); background: var(--paper); }
+.filter { min-height: 36px; padding: 0 13px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }
+.filter:last-child { border-right: 0; }
+.filter.active { background: var(--navy); color: white; }
+.label-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.demo-loading { grid-column: 1 / -1; padding: 50px 20px; border: 1px solid var(--line); background: var(--paper); text-align: center; color: var(--muted); }
+.qr-label { min-height: 236px; display: grid; grid-template-columns: 132px 1fr; background: #fff; border: 1px solid #bfc9ca; overflow: hidden; }
+.qr-visual { display: flex; flex-direction: column; justify-content: center; padding: 14px; border-right: 1px dashed #aebabb; }
+.qr-visual img { display: block; width: 100%; aspect-ratio: 1; image-rendering: crisp-edges; }
+.qr-visual small { margin-top: 7px; color: #65757a; text-align: center; font-size: 7px; letter-spacing: .09em; text-transform: uppercase; }
+.label-copy { min-width: 0; padding: 17px 15px; display: flex; flex-direction: column; }
+.label-state { align-self: flex-start; display: inline-flex; min-height: 22px; align-items: center; padding: 0 7px; background: var(--green-soft); color: var(--green); font-size: 8px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.label-state.attention { background: var(--red-soft); color: var(--red); }
+.label-state.warning { background: var(--amber-soft); color: var(--amber); }
+.label-state.lifecycle { background: var(--slate-soft); color: #53666b; }
+.label-code { margin-top: 13px; color: var(--teal); font-size: 17px; font-weight: 850; letter-spacing: .04em; }
+.label-name { margin: 5px 0 0; font-size: 13px; line-height: 1.3; font-weight: 750; }
+.label-location { margin-top: 7px; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.label-action { margin-top: auto; padding-top: 10px; color: var(--ink); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.label-action a { color: inherit; text-decoration: none; border-bottom: 1px solid currentColor; }
+.verification-panel { margin-top: 48px; padding: 26px 22px; display: grid; gap: 25px; background: var(--paper); border: 1px solid var(--line); }
+.verification-panel h2 { margin: 4px 0 9px; font-size: 24px; letter-spacing: -.03em; }
+.verification-panel p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.verification-panel ul { margin: 0; padding: 0; list-style: none; }
+.verification-panel li { position: relative; padding: 10px 0 10px 26px; border-bottom: 1px solid var(--line); font-size: 12px; line-height: 1.45; }
+.verification-panel li:last-child { border-bottom: 0; }
+.verification-panel li::before { content: "□"; position: absolute; left: 0; color: var(--teal); font-size: 16px; top: 7px; }
+
+@media (min-width: 640px) {
+  .demo-shell { padding: 48px 26px 70px; }
+  .demo-intro { grid-template-columns: 1fr auto; }
+  .demo-metric { justify-self: end; }
+  .test-strip { grid-template-columns: repeat(3, 1fr); }
+  .test-strip > div { border-bottom: 0; border-right: 1px solid rgba(255,255,255,.12); }
+  .test-strip > div:last-child { border-right: 0; }
+  .demo-toolbar { flex-direction: row; align-items: end; justify-content: space-between; }
+  .filter-group { align-self: auto; }
+  .label-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .verification-panel { grid-template-columns: 1fr 1fr; padding: 34px; }
+}
+
+@media (min-width: 1000px) { .label-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+@page { size: A4; margin: 10mm; }
+@media print {
+  .demo-header, .demo-intro, .test-strip, .demo-toolbar, .verification-panel, .site-footer { display: none !important; }
+  .demo-shell { width: auto; padding: 0; }
+  .label-grid { display: grid; grid-template-columns: repeat(2, 80mm); gap: 7mm; align-content: start; }
+  .qr-label { width: 80mm; height: 50mm; min-height: 0; grid-template-columns: 34mm 1fr; break-inside: avoid; box-shadow: none; }
+  .qr-visual { padding: 3.5mm; }
+  .qr-visual small { font-size: 6pt; margin-top: 1mm; }
+  .label-copy { padding: 4mm 3mm; }
+  .label-state { min-height: 5mm; padding: 0 2mm; font-size: 6pt; }
+  .label-code { margin-top: 3mm; font-size: 11pt; }
+  .label-name { margin-top: 1mm; font-size: 8pt; }
+  .label-location { margin-top: 1.5mm; font-size: 6pt; }
+  .label-action { padding-top: 1.5mm; font-size: 5.5pt; }
+}

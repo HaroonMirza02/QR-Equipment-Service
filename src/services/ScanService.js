@@ -3,6 +3,7 @@
 const Equipment = require('../models/Equipment');
 const MaintenanceEvent = require('../models/MaintenanceEvent');
 const FaultIncident = require('../models/FaultIncident');
+const Technician = require('../models/Technician');
 const OverdueService = require('./OverdueService');
 
 const SEVERITY_ORDER = ['Low', 'Medium', 'High', 'Critical'];
@@ -21,34 +22,44 @@ function highestSeverity(severities) {
 class ScanService {
   /**
    * Resolve a qrToken to a public-safe profile.
-   * Returns one of four shapes:
+   * Returns one of six shapes:
    *   { type: 'active',    data: PublicProfile }
    *   { type: 'retired',   data: TombstoneRetired }
    *   { type: 'replaced',  data: TombstoneReplaced }
    *   { type: 'not_found' }
    */
   async resolve(qrToken) {
-    // Primary lookup: find by active qrToken regardless of qrStatus
-    // (retired/replaced equipment keeps its record but qrToken is set to null)
-    // We need to also handle the case where someone scans a token that matched
-    // a now-retired record. Since we null out qrToken on retire/replace,
-    // a direct match on qrToken will only find active records.
-    // Tombstone cases (retired/replaced) are therefore unreachable via qrToken
-    // after retirement — which is correct: the token is gone, we return 404.
-    //
-    // However, per ARCHITECTURE.md §4.3, if qrStatus is 'revoked' or 'replaced'
-    // and the token is still somehow present (edge-case: future extension where
-    // we keep the token but mark it), we return the tombstone.
-    // The current implementation nulls out qrToken, so this path returns 404
-    // for stale tokens. That is the correct, secure behaviour documented in §6.2.
+    // First resolve the active token. If it is no longer current, look in the
+    // immutable token history so a printed retired/replaced label still opens a
+    // safe tombstone rather than an ambiguous 404.
+    let equipment = await Equipment.findOne({ qrToken }).lean();
+    let matchedHistoricalToken = false;
 
-    const equipment = await Equipment.findOne({ qrToken }).lean();
+    if (!equipment) {
+      equipment = await Equipment.findOne({ 'qrTokenHistory.token': qrToken }).lean();
+      matchedHistoricalToken = Boolean(equipment);
+    }
 
     if (!equipment) {
       return { type: 'not_found' };
     }
 
-    // Token found — check qrStatus
+    // A rotated label belonging to active equipment is deliberately not linked
+    // to the new private token. This communicates that the physical label must
+    // be replaced without weakening token rotation.
+    if (matchedHistoricalToken && equipment.qrStatus === 'active') {
+      return {
+        type: 'revoked',
+        data: {
+          status: 'revoked',
+          code: 'QR_REVOKED',
+          message: 'This label has been revoked. Ask a supervisor for the current equipment label.',
+          equipmentCode: equipment.equipmentCode,
+        },
+      };
+    }
+
+    // Token found — check equipment lifecycle
     if (equipment.qrStatus === 'revoked') {
       return {
         type: 'retired',
@@ -58,6 +69,7 @@ class ScanService {
           message: 'This equipment has been retired and is no longer in service.',
           retiredEquipmentCode: equipment.equipmentCode,
           retiredEquipmentName: equipment.name,
+          retiredAt: this._historyDate(equipment, qrToken),
           successor: null,
         },
       };
@@ -74,7 +86,7 @@ class ScanService {
           successor = {
             equipmentCode: newEq.equipmentCode,
             name: newEq.name,
-            qrCodeUrl: `${baseUrl}/api/public/scan/${newEq.qrToken}`,
+            profileUrl: `${baseUrl}/equipment/${newEq.qrToken}`,
           };
         }
       }
@@ -85,6 +97,7 @@ class ScanService {
           code: 'QR_REPLACED',
           message: "This equipment has been replaced. Scan the new unit's QR code, or view its profile below.",
           retiredEquipmentCode: equipment.equipmentCode,
+          retiredAt: this._historyDate(equipment, qrToken),
           successor,
         },
       };
@@ -103,9 +116,16 @@ class ScanService {
     }
 
     // Build public profile
-    const [maintenanceSummary, faultSummary] = await Promise.all([
-      this._getMaintenanceSummary(equipment._id),
-      this._getFaultSummary(equipment._id),
+    const [maintenanceSummary, faultSummary, maintenanceHistory, faultHistory, technician] = await Promise.all([
+      this._getMaintenanceSummary(equipment._id, equipment.tenantId),
+      this._getFaultSummary(equipment._id, equipment.tenantId),
+      this._getMaintenanceHistory(equipment._id, equipment.tenantId),
+      this._getFaultHistory(equipment._id, equipment.tenantId),
+      equipment.assignedTechnicianId
+        ? Technician.findOne({ _id: equipment.assignedTechnicianId, tenantId: equipment.tenantId })
+          .select('name specialty status')
+          .lean()
+        : null,
     ]);
 
     const { isOverdue, daysOverdue } = OverdueService.compute(equipment.nextMaintenanceDate);
@@ -118,22 +138,37 @@ class ScanService {
         category: equipment.category,
         manufacturer: equipment.manufacturer,
         model: equipment.model,
+        serialNumber: equipment.serialNumber,
         installationDate: equipment.installationDate,
         location: equipment.location,
         status: equipment.status,
+        maintenanceIntervalDays: equipment.maintenanceIntervalDays,
         nextMaintenanceDate: equipment.nextMaintenanceDate,
         isOverdue,
         daysOverdue,
         maintenanceSummary,
         faultSummary,
+        assignedTechnician: technician ? {
+          name: technician.name,
+          specialty: technician.specialty,
+          status: technician.status,
+        } : null,
+        maintenanceHistory,
+        faultHistory,
+        recordUpdatedAt: equipment.updatedAt,
       },
     };
   }
 
-  async _getMaintenanceSummary(equipmentId) {
+  _historyDate(equipment, qrToken) {
+    const entry = equipment.qrTokenHistory?.find((item) => item.token === qrToken);
+    return entry?.revokedAt || equipment.updatedAt || null;
+  }
+
+  async _getMaintenanceSummary(equipmentId, tenantId) {
     const [totalCount, lastEvent] = await Promise.all([
-      MaintenanceEvent.countDocuments({ equipmentId }),
-      MaintenanceEvent.findOne({ equipmentId }).sort({ date: -1 }).select('date type').lean(),
+      MaintenanceEvent.countDocuments({ equipmentId, tenantId }),
+      MaintenanceEvent.findOne({ equipmentId, tenantId }).sort({ date: -1 }).select('date type').lean(),
     ]);
     return {
       totalCount,
@@ -142,9 +177,9 @@ class ScanService {
     };
   }
 
-  async _getFaultSummary(equipmentId) {
+  async _getFaultSummary(equipmentId, tenantId) {
     const openFaults = await FaultIncident.find(
-      { equipmentId, status: { $ne: 'Resolved' } },
+      { equipmentId, tenantId, status: { $ne: 'Resolved' } },
       { severity: 1 }
     ).lean();
 
@@ -152,6 +187,44 @@ class ScanService {
       openCount: openFaults.length,
       highestOpenSeverity: highestSeverity(openFaults.map((f) => f.severity)),
     };
+  }
+
+  async _getMaintenanceHistory(equipmentId, tenantId) {
+    const events = await MaintenanceEvent.find({ equipmentId, tenantId })
+      .sort({ date: -1 })
+      .limit(10)
+      .select('type date description partsUsed nextRecommendedDate performedByTechnicianId')
+      .populate('performedByTechnicianId', 'name specialty')
+      .lean();
+
+    return events.map((event) => ({
+      type: event.type,
+      date: event.date,
+      description: event.description,
+      partsUsed: event.partsUsed,
+      nextRecommendedDate: event.nextRecommendedDate,
+      technician: event.performedByTechnicianId ? {
+        name: event.performedByTechnicianId.name,
+        specialty: event.performedByTechnicianId.specialty,
+      } : null,
+    }));
+  }
+
+  async _getFaultHistory(equipmentId, tenantId) {
+    const faults = await FaultIncident.find({ equipmentId, tenantId })
+      .sort({ reportedDate: -1 })
+      .limit(10)
+      .select('reportedDate severity description status resolvedDate resolutionNotes')
+      .lean();
+
+    return faults.map((fault) => ({
+      reportedDate: fault.reportedDate,
+      severity: fault.severity,
+      description: fault.description,
+      status: fault.status,
+      resolvedDate: fault.resolvedDate,
+      resolutionNotes: fault.resolutionNotes,
+    }));
   }
 }
 

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b1f26" />
+    <meta name="description" content="Industrial equipment QR label demo and print test sheet." />
+    <title>QR Label Lab · PlantOps</title>
+    <link rel="stylesheet" href="/static/app/styles.css" />
+    <link rel="stylesheet" href="/static/app/demo.css" />
+    <script src="/static/app/demo.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header demo-header">
+      <a class="brand" href="/demo" aria-label="PlantOps QR label lab">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span><strong>PlantOps</strong><small>QR label lab</small></span>
+      </a>
+      <button class="header-print" id="print-labels" type="button">Print test sheet</button>
+    </header>
+
+    <main class="demo-shell">
+      <section class="demo-intro">
+        <div>
+          <p class="eyebrow">Industrial equipment demo</p>
+          <h1>Scan-ready asset labels</h1>
+          <p class="demo-lede">A focused set of operating, overdue, faulty, retired and replaced equipment for phone and print testing.</p>
+        </div>
+        <div class="demo-metric"><strong id="label-count">—</strong><span>test labels</span></div>
+      </section>
+
+      <section class="test-strip" aria-label="Physical QR test guidance">
+        <div><span>01</span><p><strong>Print at 100%</strong>Keep the QR at least 30 mm wide.</p></div>
+        <div><span>02</span><p><strong>Scan at working distance</strong>Test at 20–80 cm in normal plant light.</p></div>
+        <div><span>03</span><p><strong>Confirm the asset code</strong>The phone page must match the physical label.</p></div>
+      </section>
+
+      <div class="demo-toolbar">
+        <div>
+          <h2>Label test set</h2>
+          <p>Each code demonstrates a deliberate condition or lifecycle state.</p>
+        </div>
+        <div class="filter-group" role="group" aria-label="Filter labels">
+          <button class="filter active" data-filter="all" type="button">All</button>
+          <button class="filter" data-filter="attention" type="button">Attention</button>
+          <button class="filter" data-filter="lifecycle" type="button">Lifecycle</button>
+        </div>
+      </div>
+
+      <section id="label-grid" class="label-grid" aria-live="polite">
+        <div class="demo-loading">Preparing QR test labels…</div>
+      </section>
+
+      <section class="verification-panel">
+        <div>
+          <p class="eyebrow">Acceptance check</p>
+          <h2>Printed label verification</h2>
+          <p>Use one modern iOS device and one Android device. Test the smallest intended print size, a lightly scuffed copy and the normal installation distance.</p>
+        </div>
+        <ul>
+          <li>Camera recognizes the QR without a dedicated scanner app</li>
+          <li>Profile code and equipment name match the printed label</li>
+          <li>Status and overdue state are readable without scrolling</li>
+          <li>Retired and replaced labels never show an active profile</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="site-footer"><span>Demo directory is disabled by default in production</span></footer>
+  </body>
+</html>

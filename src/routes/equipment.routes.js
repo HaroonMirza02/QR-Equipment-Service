@@ -5,6 +5,7 @@ const {
   list,
   listOverdue,
   getById,
+  getQR,
   create,
   patch,
   retire,
@@ -51,6 +52,13 @@ router.post(
   roleGuard('Admin'),
   validate(createEquipmentSchema),
   create
+);
+
+// GET /api/equipment/:id/qr — Admin only. Registered before /:id.
+router.get(
+  '/:id/qr',
+  roleGuard('Admin'),
+  getQR
 );
 
 // GET /api/equipment/:id  — Admin | Technician | Viewer

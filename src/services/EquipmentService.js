@@ -73,6 +73,21 @@ class EquipmentService {
     return OverdueService.annotate(sanitizeFromLean(doc));
   }
 
+  async getQR(tenantId, equipmentId) {
+    const equipment = await this._loadOwned(tenantId, equipmentId);
+    if (equipment.status === 'Retired' || equipment.qrStatus !== 'active') {
+      throw new AppError('Active QR is not available for retired equipment', 409, 'QR_NOT_ACTIVE');
+    }
+
+    const baseUrl = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+    return {
+      equipmentCode: equipment.equipmentCode,
+      name: equipment.name,
+      qrCodeUrl: `${baseUrl}/static/qr/${equipment.qrToken}.png`,
+      profileUrl: `${baseUrl}/equipment/${equipment.qrToken}`,
+    };
+  }
+
   // ── Create ───────────────────────────────────────────────────────────────────
 
   async create(tenantId, body) {

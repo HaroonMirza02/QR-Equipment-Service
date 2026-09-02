@@ -112,8 +112,8 @@ Mobile Browser                    Express (Public Router)    ScanService        
 Key notes:
 - `id` and `assignedTechnicianId` are **never** included in the public response.
 - `qrToken` is also **never** echoed back — the response contains only derived/safe fields.
-- Maintenance history is summarized (count + last date + next date), not full records.
-- Fault history is summarized (open count + severity summary), not full records with resolution notes.
+- The response includes summaries plus the latest ten public-safe maintenance and fault records.
+- Assigned technician name and specialty are included; contact details and all internal IDs remain private.
 
 ---
 
@@ -388,20 +388,22 @@ Roles: **Public** (anonymous QR scan) | **Viewer** (authenticated read-only) | *
 ### Field Restrictions for Public Role (A*)
 
 **Equipment profile** — returned fields:
-- `equipmentCode`, `name`, `category`, `manufacturer`, `model`
+- `equipmentCode`, `name`, `category`, `manufacturer`, `model`, `serialNumber`
 - `installationDate`, `location`
-- `status`, `nextMaintenanceDate`
+- `status`, `maintenanceIntervalDays`, `nextMaintenanceDate`
 - `isOverdue` (computed boolean), `daysOverdue` (computed int, 0 if not overdue)
 
-**Excluded from public**: `_id`, `qrToken`, `qrTokenHistory`, `assignedTechnicianId`, `serialNumber`, `maintenanceIntervalDays`, `notes`, `tenantId`, `qrStatus`, `replacedByEquipmentId`, `replacedFromEquipmentId`
+**Excluded from public**: `_id`, `qrToken`, `qrTokenHistory`, `assignedTechnicianId`, `notes`, `tenantId`, `qrStatus`, `replacedByEquipmentId`, `replacedFromEquipmentId`
 
 **Maintenance history** — returned for public:
-- `{ totalCount: Number, lastMaintenanceDate: Date|null, nextMaintenanceDate: Date|null, lastMaintenanceType: String|null }`
+- Summary: `{ totalCount, lastMaintenanceDate, lastMaintenanceType }`
+- Latest ten: type, date, description, parts used, next recommended date, and technician name/specialty. No IDs or attachments.
 
 **Fault history** — returned for public:
-- `{ openCount: Number, highestOpenSeverity: String|null }`
+- Summary: `{ openCount, highestOpenSeverity }`
+- Latest ten: reported date, severity, description, status, resolved date, and resolution notes. No reporter/resolver IDs.
 
-**Technician** — nothing returned for public. The assigned technician's name is intentionally withheld because it constitutes PII in an industrial context and has no actionable value for an anonymous scanner.
+**Technician** — assigned technician name, specialty, and active/inactive status are returned. Phone and email remain private.
 
 ---
 
@@ -412,7 +414,7 @@ Roles: **Public** (anonymous QR scan) | **Viewer** (authenticated read-only) | *
 1. On `POST /api/equipment`, after the equipment document is validated and before it is persisted, `QRService.generateToken()` is called.
 2. `generateToken()` calls `crypto.randomBytes(32).toString('hex')` and checks uniqueness against the `equipment` collection (collision is astronomically unlikely but must be handled with a retry loop, max 3 attempts).
 3. The equipment is persisted with `qrToken = <generated>` and `qrStatus = 'active'`.
-4. The QR code image (encoding the URL `https://<domain>/scan/<qrToken>`) is generated server-side using the `qrcode` npm library and stored. The storage URL is returned in the `POST /api/equipment` response as `qrCodeUrl` so the label-printing workstream can fetch it immediately.
+4. The QR code image (encoding the human-facing URL `https://<domain>/equipment/<qrToken>`) is generated server-side using the `qrcode` npm library and stored. The storage URL is returned in the `POST /api/equipment` response as `qrCodeUrl` so the label-printing workstream can fetch it immediately.
 5. `qrTokenHistory` is initialized to `[]`.
 
 ### 4.2 Regenerate QR (`POST /api/equipment/:id/qr/regenerate`)
@@ -425,15 +427,15 @@ Steps:
 3. Generate a new token via `generateToken()`.
 4. Set `qrToken = newToken`, `qrStatus = 'active'`.
 5. Generate and store new QR image. Return `qrCodeUrl`.
-6. Old token is now invalid — any scan of it will hit the `QR_NOT_FOUND` path (token not in `qrToken` field of any document, and history entries are not scanned-against).
+6. Old token resolves to `QR_REVOKED`; it never reveals or redirects to the replacement token.
 
 **Revoke semantics:** "Revoked" means the token string is moved out of the active `qrToken` field into `qrTokenHistory`. The equipment record is retained in full. There is no deletion. The revoke reason and actor are preserved. The equipment's `qrStatus` transitions to `revoked` only if it is being retired without a replacement (see 4.4). If regenerating, `qrStatus` stays `active` on the new token.
 
 ### 4.3 Scan of a Revoked or Retired Token
 
-A scan arrives at `GET /api/public/scan/:qrToken`. The lookup queries `{ qrToken: <value>, qrStatus: 'active' }`.
+A scan arrives at `GET /api/public/scan/:qrToken`. Resolution checks `qrToken` first and then `qrTokenHistory.token` for an explicit lifecycle state.
 
-**Case A — Token not found at all (never existed, or was rotated out of active field):**
+**Case A — Token not found at all (never existed):**
 Response: `404 { code: "QR_NOT_FOUND", message: "This QR code is not recognized." }`
 
 **Case B — Token found but `qrStatus = 'revoked'` (retired equipment, no successor):**
@@ -462,7 +464,7 @@ HTTP 200
   "successor": {
     "equipmentCode": "PUMP-015",
     "name": "Primary Transfer Pump Mk2",
-    "qrCodeUrl": "https://<domain>/scan/<newQrToken>"
+    "profileUrl": "https://<domain>/equipment/<newQrToken>"
   }
 }
 ```
@@ -702,6 +704,14 @@ All endpoints below require `Authorization: Bearer <jwt>`. The middleware attach
   - `401` — no/invalid token
   - `403` — tenant mismatch (equipment exists but belongs to different tenant)
   - `404 EQUIPMENT_NOT_FOUND` — id not found or outside tenant
+
+**GET /api/equipment/:id/qr**
+
+- Role: Admin only
+- Returns `equipmentCode`, `name`, `qrCodeUrl`, and the human-facing
+  `profileUrl` for the current active label.
+- The raw token is not returned as a standalone field.
+- Retired/revoked equipment returns `409 QR_NOT_ACTIVE`.
 
 ---
 
@@ -950,7 +960,7 @@ All endpoints below require `Authorization: Bearer <jwt>`. The middleware attach
 **Mitigation:**
 - `GET /api/public/scan/:qrToken` queries `{ qrToken: <value>, qrStatus: 'active' }`. A revoked/replaced token is no longer in the `qrToken` field (moved to `qrTokenHistory` or set to null).
 - The lookup therefore returns no document via the active index.
-- The response for a token found in history (not applicable — history is not scanned-against) is a 404 or a tombstone 200. There is no leakage of current equipment data to a stale token holder.
+- A history match returns only a lifecycle tombstone. Rotated active labels return `QR_REVOKED`; retired/replaced labels return their explicit state.
 - The former token cannot be used to access the new equipment's profile because the new record has a completely different, independently generated token.
 
 ### 6.3 Threat: Authenticated Endpoint Without Correct Role

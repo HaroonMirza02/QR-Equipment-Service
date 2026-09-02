@@ -24,6 +24,7 @@ async function scan(req, res, next) {
       case 'active':
       case 'retired':
       case 'replaced':
+      case 'revoked':
       case 'restricted':
         return success(res, result.data, 200);
 

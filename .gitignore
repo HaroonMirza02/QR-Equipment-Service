@@ -1,3 +1,46 @@
-*.env
+# Environment files and local secrets
 .env
-node_modules
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Generated equipment QR images
+public/qr/*.png
+!public/qr/.gitkeep
+
+# Logs and runtime output
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Test and coverage output
+coverage/
+.nyc_output/
+test-output/
+
+# Build and temporary output
+dist/
+build/
+tmp/
+temp/
+.cache/
+
+# Local editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local agent/tool state
+.codex/
+.agents/

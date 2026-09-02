@@ -3,6 +3,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { scan } = require('../controllers/ScanController');
+const { listDemoEquipment } = require('../controllers/DemoController');
 
 const router = express.Router();
 
@@ -24,5 +25,9 @@ const scanLimiter = rateLimit({
 
 // GET /api/public/scan/:qrToken
 router.get('/scan/:qrToken', scanLimiter, scan);
+
+// Development/demo-only QR label directory. In production it is disabled
+// unless explicitly enabled for a controlled showcase environment.
+router.get('/demo-equipment', scanLimiter, listDemoEquipment);
 
 module.exports = router;
