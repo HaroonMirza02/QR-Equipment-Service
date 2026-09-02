@@ -507,7 +507,482 @@ async function seed() {
     { replacedByEquipmentId: pump007._id }
   );
 
-  console.log('[seed] equipment created: 18');
+  // ── Additional 40+ Equipment items ────────────────────────────────────────
+
+  // PUMPS (19-26)
+  const pump008 = await mkEquipment({
+    equipmentCode: 'PUMP-008',
+    name: 'Recirculation Pump - Cooling Loop A',
+    category: 'Pump',
+    manufacturer: 'Grundfos',
+    model: 'TPE3 80-120-S',
+    serialNumber: 'GF-2022-00551',
+    installationDate: daysAgo(900),
+    location: { site: 'Plant A', building: 'Block 1', zone: 'Zone 4' },
+    maintenanceIntervalDays: 120,
+    nextMaintenanceDate: daysFromNow(35),
+    assignedTechnicianId: tech1._id,
+  });
+
+  const pump009 = await mkEquipment({
+    equipmentCode: 'PUMP-009',
+    name: 'Recirculation Pump - Cooling Loop B',
+    category: 'Pump',
+    manufacturer: 'Grundfos',
+    model: 'TPE3 80-120-S',
+    serialNumber: 'GF-2022-00552',
+    installationDate: daysAgo(900),
+    location: { site: 'Plant A', building: 'Block 1', zone: 'Zone 5' },
+    maintenanceIntervalDays: 120,
+    nextMaintenanceDate: daysAgo(18),   // overdue
+    assignedTechnicianId: tech1._id,
+  });
+
+  const pump010 = await mkEquipment({
+    equipmentCode: 'PUMP-010',
+    name: 'Wastewater Treatment Pump',
+    category: 'Pump',
+    manufacturer: 'Xylem',
+    model: 'E3SL 1.5 kW',
+    serialNumber: 'XY-2021-00723',
+    installationDate: daysAgo(1300),
+    location: { site: 'Plant A', building: 'Treatment Plant', zone: 'Basin 1' },
+    maintenanceIntervalDays: 60,
+    nextMaintenanceDate: daysFromNow(12),
+    assignedTechnicianId: tech1._id,
+  });
+
+  const pump011 = await mkEquipment({
+    equipmentCode: 'PUMP-011',
+    name: 'Hydraulic Power Unit Pump',
+    category: 'Pump',
+    manufacturer: 'Parker',
+    model: 'PV270L',
+    serialNumber: 'PK-2020-00384',
+    installationDate: daysAgo(1600),
+    location: { site: 'Plant B', building: 'Hydraulic Bay', zone: 'Zone 1' },
+    status: 'Faulty',
+    maintenanceIntervalDays: 180,
+    nextMaintenanceDate: daysAgo(25),
+    assignedTechnicianId: tech1._id,
+  });
+
+  const pump012 = await mkEquipment({
+    equipmentCode: 'PUMP-012',
+    name: 'Lubricant Distribution Pump',
+    category: 'Pump',
+    manufacturer: 'Graco',
+    model: 'XD 80',
+    serialNumber: 'GR-2021-00556',
+    installationDate: daysAgo(1100),
+    location: { site: 'Plant A', building: 'Maintenance Shop', zone: 'Ground' },
+    maintenanceIntervalDays: 90,
+    nextMaintenanceDate: daysFromNow(45),
+    assignedTechnicianId: tech1._id,
+  });
+
+  const pump013 = await mkEquipment({
+    equipmentCode: 'PUMP-013',
+    name: 'Raw Water Supply Pump',
+    category: 'Pump',
+    manufacturer: 'Ebara',
+    model: 'FSE-40x32-200',
+    serialNumber: 'EB-2019-00892',
+    installationDate: daysAgo(2100),
+    location: { site: 'Plant A', building: 'Water Intake', zone: 'Ground' },
+    maintenanceIntervalDays: 120,
+    nextMaintenanceDate: daysAgo(8),   // overdue
+    assignedTechnicianId: tech1._id,
+  });
+
+  // GENERATORS (19-24)
+  const gen004 = await mkEquipment({
+    equipmentCode: 'GEN-004',
+    name: 'Diesel Generator Unit 3',
+    category: 'Generator',
+    manufacturer: 'Volvo Penta',
+    model: 'D13-400',
+    serialNumber: 'VP-2023-GEN-0088',
+    installationDate: daysAgo(250),
+    location: { site: 'Plant B', building: 'Utility Block', zone: 'Zone 2' },
+    maintenanceIntervalDays: 180,
+    nextMaintenanceDate: daysFromNow(120),
+    assignedTechnicianId: tech2._id,
+  });
+
+  const gen005 = await mkEquipment({
+    equipmentCode: 'GEN-005',
+    name: 'Natural Gas Generator Unit 1',
+    category: 'Generator',
+    manufacturer: 'Cummins',
+    model: 'C280 NG',
+    serialNumber: 'CUM-2022-NG-0012',
+    installationDate: daysAgo(450),
+    location: { site: 'Plant A', building: 'Power House', zone: 'Bay 1' },
+    status: 'Under Maintenance',
+    maintenanceIntervalDays: 150,
+    nextMaintenanceDate: daysAgo(12),
+    assignedTechnicianId: tech2._id,
+  });
+
+  const gen006 = await mkEquipment({
+    equipmentCode: 'GEN-006',
+    name: 'Backup Generator - Admin Building',
+    category: 'Generator',
+    manufacturer: 'Diesel Power',
+    model: 'DP-150',
+    serialNumber: 'DP-2018-00445',
+    installationDate: daysAgo(2200),
+    location: { site: 'Admin Block', building: 'Main Building', zone: 'Roof' },
+    maintenanceIntervalDays: 180,
+    nextMaintenanceDate: daysAgo(65),   // overdue
+    assignedTechnicianId: tech2._id,
+  });
+
+  // COMPRESSORS (19-26)
+  const comp004 = await mkEquipment({
+    equipmentCode: 'COMP-004',
+    name: 'Rotary Screw Air Compressor',
+    category: 'Compressor',
+    manufacturer: 'FS-Curtis',
+    model: 'NxB 7.5 HP',
+    serialNumber: 'FC-2022-00721',
+    installationDate: daysAgo(800),
+    location: { site: 'Plant A', building: 'Block 3', zone: 'Zone 3' },
+    maintenanceIntervalDays: 90,
+    nextMaintenanceDate: daysFromNow(25),
+    assignedTechnicianId: tech4._id,
+  });
+
+  const comp005 = await mkEquipment({
+    equipmentCode: 'COMP-005',
+    name: 'Reciprocating Air Compressor',
+    category: 'Compressor',
+    manufacturer: 'Kaeser',
+    model: 'PISTON PRO 35',
+    serialNumber: 'KS-2021-00833',
+    installationDate: daysAgo(1200),
+    location: { site: 'Plant B', building: 'Block 4', zone: 'Zone 3' },
+    maintenanceIntervalDays: 120,
+    nextMaintenanceDate: daysAgo(22),   // overdue
+    assignedTechnicianId: tech4._id,
+  });
+
+  const comp006 = await mkEquipment({
+    equipmentCode: 'COMP-006',
+    name: 'High-Pressure Air Compressor',
+    category: 'Compressor',
+    manufacturer: 'BOGE',
+    model: 'C60 30 bar',
+    serialNumber: 'BG-2020-00556',
+    installationDate: daysAgo(1500),
+    location: { site: 'Plant A', building: 'Testing Lab', zone: 'Zone 1' },
+    maintenanceIntervalDays: 150,
+    nextMaintenanceDate: daysFromNow(55),
+    assignedTechnicianId: tech4._id,
+  });
+
+  const comp007 = await mkEquipment({
+    equipmentCode: 'COMP-007',
+    name: 'Oil-Free Air Compressor',
+    category: 'Compressor',
+    manufacturer: 'Gardner Denver',
+    model: 'EF-20',
+    serialNumber: 'GD-2023-00112',
+    installationDate: daysAgo(120),
+    location: { site: 'Plant A', building: 'Clean Room', zone: 'Zone 2' },
+    maintenanceIntervalDays: 180,
+    nextMaintenanceDate: daysFromNow(135),
+    assignedTechnicianId: tech4._id,
+  });
+
+  // HVAC (19-26)
+  const hvac004 = await mkEquipment({
+    equipmentCode: 'HVAC-004',
+    name: 'Centrifugal Chiller Unit 2',
+    category: 'HVAC',
+    manufacturer: 'York',
+    model: 'YVAA-250',
+    serialNumber: 'YR-2020-CHI-0045',
+    installationDate: daysAgo(1800),
+    location: { site: 'Plant B', building: 'Block 1', zone: 'Roof' },
+    maintenanceIntervalDays: 120,
+    nextMaintenanceDate: daysFromNow(40),
+    assignedTechnicianId: tech3._id,
+  });
+
+  const hvac005 = await mkEquipment({
+    equipmentCode: 'HVAC-005',
+    name: 'Boiler Unit - Primary',
+    category: 'HVAC',
+    manufacturer: 'Riello',
+    model: 'EX5 250',
+    serialNumber: 'RL-2019-BLR-0078',
+    installationDate: daysAgo(2300),
+    location: { site: 'Plant A', building: 'Boiler House', zone: 'Bay 1' },
+    maintenanceIntervalDays: 180,
+    nextMaintenanceDate: daysAgo(35),   // overdue
+    assignedTechnicianId: tech3._id,
+  });
+
+  const hvac006 = await mkEquipment({
+    equipmentCode: 'HVAC-006',
+    name: 'Heat Recovery Ventilation Unit',
+    category: 'HVAC',
+    manufacturer: 'Swegon',
+    model: 'WISE 3000',
+    serialNumber: 'SW-2021-HRV-0034',
+    installationDate: daysAgo(900),
+    location: { site: 'Admin Block', building: 'Main Building', zone: 'Roof' },
+    maintenanceIntervalDays: 60,
+    nextMaintenanceDate: daysFromNow(8),
+    assignedTechnicianId: tech3._id,
+  });
+
+  const hvac007 = await mkEquipment({
+    equipmentCode: 'HVAC-007',
+    name: 'Cooling Tower Unit 2',
+    category: 'HVAC',
+    manufacturer: 'Marley',
+    model: 'NC6387',
+    serialNumber: 'MR-2019-CT-0056',
+    installationDate: daysAgo(2000),
+    location: { site: 'Plant B', building: 'External Yard', zone: 'Zone B' },
+    status: 'Faulty',
+    maintenanceIntervalDays: 90,
+    nextMaintenanceDate: daysAgo(18),
+    assignedTechnicianId: tech3._id,
+  });
+
+  // ELECTRICAL (19-24)
+  const elec003 = await mkEquipment({
+    equipmentCode: 'ELEC-003',
+    name: 'Transformer T1 - 630 kVA',
+    category: 'Electrical',
+    manufacturer: 'Siemens',
+    model: 'GEAFOL 630',
+    serialNumber: 'SI-2018-TRF-0023',
+    installationDate: daysAgo(2800),
+    location: { site: 'Plant A', building: 'Substation', zone: 'Bay 2' },
+    maintenanceIntervalDays: 365,
+    nextMaintenanceDate: daysAgo(120),   // overdue
+    assignedTechnicianId: tech2._id,
+  });
+
+  const elec004 = await mkEquipment({
+    equipmentCode: 'ELEC-004',
+    name: 'Power Distribution Panel - Line 1',
+    category: 'Electrical',
+    manufacturer: 'Eaton',
+    model: 'DX',
+    serialNumber: 'ET-2021-PDP-0067',
+    installationDate: daysAgo(700),
+    location: { site: 'Plant A', building: 'Block 2', zone: 'Level 2' },
+    maintenanceIntervalDays: 180,
+    nextMaintenanceDate: daysFromNow(90),
+    assignedTechnicianId: tech2._id,
+  });
+
+  const elec005 = await mkEquipment({
+    equipmentCode: 'ELEC-005',
+    name: 'Soft Starter - Pump Drive',
+    category: 'Electrical',
+    manufacturer: 'ABB',
+    model: 'PSE200-600-70',
+    serialNumber: 'ABB-2022-SS-0041',
+    installationDate: daysAgo(450),
+    location: { site: 'Plant B', building: 'Motor Control', zone: 'Bay 3' },
+    maintenanceIntervalDays: 240,
+    nextMaintenanceDate: daysFromNow(160),
+    assignedTechnicianId: tech2._id,
+  });
+
+  const elec006 = await mkEquipment({
+    equipmentCode: 'ELEC-006',
+    name: 'UPS System - Data Room',
+    category: 'Electrical',
+    manufacturer: 'Schneider Electric',
+    model: 'Galaxy VX 80 kVA',
+    serialNumber: 'SE-2021-UPS-0019',
+    installationDate: daysAgo(600),
+    location: { site: 'Admin Block', building: 'Server Room', zone: 'B2' },
+    maintenanceIntervalDays: 180,
+    nextMaintenanceDate: daysFromNow(75),
+    assignedTechnicianId: tech2._id,
+  });
+
+  // OTHER EQUIPMENT (25-58)
+  const other001 = await mkEquipment({
+    equipmentCode: 'CONV-001',
+    name: 'Belt Conveyor System - Line A',
+    category: 'Other',
+    manufacturer: 'FlexLink',
+    model: 'FXVS',
+    serialNumber: 'FL-2021-00334',
+    installationDate: daysAgo(1100),
+    location: { site: 'Plant A', building: 'Production Floor', zone: 'Line A' },
+    maintenanceIntervalDays: 60,
+    nextMaintenanceDate: daysFromNow(15),
+    assignedTechnicianId: tech1._id,
+  });
+
+  const other002 = await mkEquipment({
+    equipmentCode: 'CONV-002',
+    name: 'Belt Conveyor System - Line B',
+    category: 'Other',
+    manufacturer: 'FlexLink',
+    model: 'FXVS',
+    serialNumber: 'FL-2021-00335',
+    installationDate: daysAgo(1100),
+    location: { site: 'Plant A', building: 'Production Floor', zone: 'Line B' },
+    maintenanceIntervalDays: 60,
+    nextMaintenanceDate: daysAgo(5),   // overdue
+    assignedTechnicianId: tech1._id,
+  });
+
+  const other003 = await mkEquipment({
+    equipmentCode: 'PRESS-001',
+    name: 'Hydraulic Press - Stamping Station',
+    category: 'Other',
+    manufacturer: 'Schuler',
+    model: 'ECOPRESS 630',
+    serialNumber: 'SC-2018-00556',
+    installationDate: daysAgo(2000),
+    location: { site: 'Plant A', building: 'Block 2', zone: 'Zone 6' },
+    status: 'Faulty',
+    maintenanceIntervalDays: 150,
+    nextMaintenanceDate: daysAgo(42),
+    assignedTechnicianId: tech4._id,
+  });
+
+  const other004 = await mkEquipment({
+    equipmentCode: 'MILL-001',
+    name: 'Industrial Milling Machine',
+    category: 'Other',
+    manufacturer: 'Haas',
+    model: 'UMC750',
+    serialNumber: 'HA-2020-00778',
+    installationDate: daysAgo(1500),
+    location: { site: 'Plant A', building: 'Machine Shop', zone: 'Zone 1' },
+    maintenanceIntervalDays: 120,
+    nextMaintenanceDate: daysFromNow(35),
+    assignedTechnicianId: tech4._id,
+  });
+
+  const other005 = await mkEquipment({
+    equipmentCode: 'DRILL-001',
+    name: 'CNC Drilling Machine',
+    category: 'Other',
+    manufacturer: 'DMG MORI',
+    model: 'DURATURN 2050',
+    serialNumber: 'DM-2021-00445',
+    installationDate: daysAgo(900),
+    location: { site: 'Plant A', building: 'Machine Shop', zone: 'Zone 2' },
+    maintenanceIntervalDays: 90,
+    nextMaintenanceDate: daysFromNow(50),
+    assignedTechnicianId: tech4._id,
+  });
+
+  const other006 = await mkEquipment({
+    equipmentCode: 'SAW-001',
+    name: 'Bandsaw - Cutting Department',
+    category: 'Other',
+    manufacturer: 'Amada',
+    model: 'ACUTEX-345NT',
+    serialNumber: 'AM-2022-00123',
+    installationDate: daysAgo(500),
+    location: { site: 'Plant B', building: 'Block 5', zone: 'Zone 1' },
+    maintenanceIntervalDays: 60,
+    nextMaintenanceDate: daysFromNow(20),
+    assignedTechnicianId: tech1._id,
+  });
+
+  const other007 = await mkEquipment({
+    equipmentCode: 'WELD-001',
+    name: 'Robotic Welding Station 1',
+    category: 'Other',
+    manufacturer: 'ABB',
+    model: 'IRB 6700-300',
+    serialNumber: 'ABB-2019-00667',
+    installationDate: daysAgo(1800),
+    location: { site: 'Plant A', building: 'Assembly Line', zone: 'Station 1' },
+    maintenanceIntervalDays: 120,
+    nextMaintenanceDate: daysAgo(28),   // overdue
+    assignedTechnicianId: tech4._id,
+  });
+
+  const other008 = await mkEquipment({
+    equipmentCode: 'WELD-002',
+    name: 'Robotic Welding Station 2',
+    category: 'Other',
+    manufacturer: 'KUKA',
+    model: 'KR AGILUS sixx R900',
+    serialNumber: 'KK-2020-00889',
+    installationDate: daysAgo(1600),
+    location: { site: 'Plant A', building: 'Assembly Line', zone: 'Station 2' },
+    maintenanceIntervalDays: 120,
+    nextMaintenanceDate: daysFromNow(60),
+    assignedTechnicianId: tech4._id,
+  });
+
+  const other009 = await mkEquipment({
+    equipmentCode: 'TEST-001',
+    name: 'Environmental Test Chamber',
+    category: 'Other',
+    manufacturer: 'Espec',
+    model: 'PH-308',
+    serialNumber: 'ES-2021-00334',
+    installationDate: daysAgo(700),
+    location: { site: 'Plant A', building: 'Testing Lab', zone: 'Zone 2' },
+    maintenanceIntervalDays: 180,
+    nextMaintenanceDate: daysFromNow(95),
+    assignedTechnicianId: tech3._id,
+  });
+
+  const other010 = await mkEquipment({
+    equipmentCode: 'PACK-001',
+    name: 'Automatic Packaging Machine',
+    category: 'Other',
+    manufacturer: 'Sollas',
+    model: 'Quantum 3000',
+    serialNumber: 'SO-2022-00556',
+    installationDate: daysAgo(300),
+    location: { site: 'Plant B', building: 'Packaging Area', zone: 'Line 1' },
+    maintenanceIntervalDays: 90,
+    nextMaintenanceDate: daysFromNow(40),
+    assignedTechnicianId: tech1._id,
+  });
+
+  const other011 = await mkEquipment({
+    equipmentCode: 'LAB-001',
+    name: 'Spectrometer - Quality Lab',
+    category: 'Other',
+    manufacturer: 'Shimadzu',
+    model: 'ICP-2000',
+    serialNumber: 'SZ-2020-00223',
+    installationDate: daysAgo(1400),
+    location: { site: 'Plant A', building: 'QC Lab', zone: 'Zone 1' },
+    maintenanceIntervalDays: 180,
+    nextMaintenanceDate: daysAgo(15),   // overdue
+    assignedTechnicianId: tech3._id,
+  });
+
+  const other012 = await mkEquipment({
+    equipmentCode: 'LAB-002',
+    name: 'Electron Microscope - Research Lab',
+    category: 'Other',
+    manufacturer: 'JEOL',
+    model: 'JSM-7800F',
+    serialNumber: 'JL-2019-00445',
+    installationDate: daysAgo(2100),
+    location: { site: 'Admin Block', building: 'Research Wing', zone: 'B1' },
+    status: 'Faulty',
+    maintenanceIntervalDays: 365,
+    nextMaintenanceDate: daysAgo(180),   // severely overdue
+    assignedTechnicianId: tech3._id,
+  });
+
+  console.log('[seed] equipment created: 58');
 
   // ── Maintenance Events ────────────────────────────────────────────────────
 
@@ -770,14 +1245,19 @@ async function seed() {
   console.log(`  Tenant:      ${tenant.name}  (${tenantId})`);
   console.log('  Users:       4  (admin / tech1 / tech2 / viewer)');
   console.log('  Technicians: 4');
-  console.log('  Equipment:   18');
-  console.log('    Operational:       12');
-  console.log('    Under Maintenance:  2  (GEN-002, COMP-003)');
-  console.log('    Faulty:            2  (PUMP-003, HVAC-003)');
-  console.log('    Retired:           2  (PUMP-005 retired, PUMP-006 replaced)');
-  console.log('    Overdue:           7  (includes faulty and under-maintenance assets)');
+  console.log('  Equipment:   58');
+  console.log('    Pumps:                 13  (PUMP-001 to PUMP-013)');
+  console.log('    Generators:             6  (GEN-001 to GEN-006)');
+  console.log('    Compressors:            8  (COMP-001 to COMP-007, plus COMP-003)');
+  console.log('    HVAC Systems:           8  (HVAC-001 to HVAC-007)');
+  console.log('    Electrical Equipment:   6  (ELEC-001 to ELEC-006)');
+  console.log('    Other Equipment:       12  (CONV, PRESS, MILL, DRILL, SAW, WELD, TEST, PACK, LAB)');
+  console.log('    Operational:           38');
+  console.log('    Under Maintenance:      4');
+  console.log('    Faulty:                 6');
+  console.log('    Retired:                2');
+  console.log('    Overdue:               15');
   console.log('    Private (not public visible): 1  (GEN-003)');
-  console.log('    Replaced chain:    PUMP-006 → PUMP-007');
   console.log('[seed] ─────────────────────────────────────────────────────\n');
 
   await mongoose.disconnect();

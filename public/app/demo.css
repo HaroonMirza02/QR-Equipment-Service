@@ -22,6 +22,13 @@
 .filter { min-height: 36px; padding: 0 13px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }
 .filter:last-child { border-right: 0; }
 .filter.active { background: var(--navy); color: white; }
+
+.category-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.category-nav label { font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.category-nav select { min-height: 36px; padding: 0 10px; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 2px; }
+.category-nav select:hover { border-color: var(--teal); }
+.category-nav select:focus { outline: 2px solid var(--teal); outline-offset: 2px; }
+
 .label-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
 .demo-loading { grid-column: 1 / -1; padding: 50px 20px; border: 1px solid var(--line); background: var(--paper); text-align: center; color: var(--muted); }
 .qr-label { min-height: 236px; display: grid; grid-template-columns: 132px 1fr; background: #fff; border: 1px solid #bfc9ca; overflow: hidden; }
@@ -29,6 +36,7 @@
 .qr-visual img { display: block; width: 100%; aspect-ratio: 1; image-rendering: crisp-edges; }
 .qr-visual small { margin-top: 7px; color: #65757a; text-align: center; font-size: 7px; letter-spacing: .09em; text-transform: uppercase; }
 .label-copy { min-width: 0; padding: 17px 15px; display: flex; flex-direction: column; }
+.label-category { align-self: flex-start; display: inline-flex; min-height: 16px; align-items: center; padding: 0 5px; background: rgba(82, 199, 183, 0.12); color: var(--teal); font-size: 7px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
 .label-state { align-self: flex-start; display: inline-flex; min-height: 22px; align-items: center; padding: 0 7px; background: var(--green-soft); color: var(--green); font-size: 8px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
 .label-state.attention { background: var(--red-soft); color: var(--red); }
 .label-state.warning { background: var(--amber-soft); color: var(--amber); }
@@ -38,6 +46,12 @@
 .label-location { margin-top: 7px; color: var(--muted); font-size: 9px; line-height: 1.4; }
 .label-action { margin-top: auto; padding-top: 10px; color: var(--ink); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .label-action a { color: inherit; text-decoration: none; border-bottom: 1px solid currentColor; }
+
+.pagination-controls { display: flex; justify-content: center; align-items: center; gap: 18px; margin: 32px 0 24px; }
+.pagination-btn { min-height: 36px; padding: 0 16px; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
+.pagination-btn:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+.pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.page-info { font-size: 12px; font-weight: 600; color: var(--muted); min-width: 100px; text-align: center; }
 .verification-panel { margin-top: 48px; padding: 26px 22px; display: grid; gap: 25px; background: var(--paper); border: 1px solid var(--line); }
 .verification-panel h2 { margin: 4px 0 9px; font-size: 24px; letter-spacing: -.03em; }
 .verification-panel p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
@@ -63,13 +77,14 @@
 
 @page { size: A4; margin: 10mm; }
 @media print {
-  .demo-header, .demo-intro, .test-strip, .demo-toolbar, .verification-panel, .site-footer { display: none !important; }
+  .demo-header, .demo-intro, .test-strip, .demo-toolbar, .category-nav, .pagination-controls, .verification-panel, .site-footer { display: none !important; }
   .demo-shell { width: auto; padding: 0; }
   .label-grid { display: grid; grid-template-columns: repeat(2, 80mm); gap: 7mm; align-content: start; }
   .qr-label { width: 80mm; height: 50mm; min-height: 0; grid-template-columns: 34mm 1fr; break-inside: avoid; box-shadow: none; }
   .qr-visual { padding: 3.5mm; }
   .qr-visual small { font-size: 6pt; margin-top: 1mm; }
   .label-copy { padding: 4mm 3mm; }
+  .label-category { display: none; }
   .label-state { min-height: 5mm; padding: 0 2mm; font-size: 6pt; }
   .label-code { margin-top: 3mm; font-size: 11pt; }
   .label-name { margin-top: 1mm; font-size: 8pt; }

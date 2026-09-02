@@ -47,9 +47,28 @@
         </div>
       </div>
 
+      <div class="category-nav">
+        <label for="category-select">Equipment Category:</label>
+        <select id="category-select">
+          <option value="all">All Categories</option>
+          <option value="Pump">Pumps</option>
+          <option value="Generator">Generators</option>
+          <option value="Compressor">Compressors</option>
+          <option value="HVAC">HVAC Systems</option>
+          <option value="Electrical">Electrical</option>
+          <option value="Other">Other Equipment</option>
+        </select>
+      </div>
+
       <section id="label-grid" class="label-grid" aria-live="polite">
         <div class="demo-loading">Preparing QR test labels…</div>
       </section>
+
+      <div class="pagination-controls" id="pagination-controls">
+        <button id="prev-page" class="pagination-btn" type="button" disabled>← Previous</button>
+        <span id="page-info" class="page-info">Page 1 of 1</span>
+        <button id="next-page" class="pagination-btn" type="button" disabled>Next →</button>
+      </div>
 
       <section class="verification-panel">
         <div>

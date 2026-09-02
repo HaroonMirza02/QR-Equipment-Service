@@ -55,22 +55,55 @@ function showPortal() {
 async function loadPortal() {
   document.querySelector('#inventory-content').innerHTML = '<div class="inventory-empty">Loading equipment register…</div>';
   try {
-    const [allEquipment, technicianResponse] = await Promise.all([fetchAllEquipment(), api('/api/technicians?pageSize=100&status=active')]);
-    equipment = allEquipment;
+    const [technicianResponse] = await Promise.all([api('/api/technicians?pageSize=100&status=active')]);
     technicians = technicianResponse.data || [];
-    renderTechnicianOptions(); renderPortal();
+    renderTechnicianOptions(); 
+    await loadEquipmentPage(1);
   } catch (error) {
     document.querySelector('#inventory-content').innerHTML = `<div class="inventory-empty">${escapeHtml(error.message)}</div>`;
     toast(error.message, true);
   }
 }
 
-async function fetchAllEquipment() {
-  const first = await api('/api/equipment?page=1&pageSize=100');
-  const totalPages = first.pagination?.totalPages || 1;
-  if (totalPages === 1) return first.data || [];
-  const remaining = await Promise.all(Array.from({ length: totalPages - 1 }, (_value, index) => api(`/api/equipment?page=${index + 2}&pageSize=100`)));
-  return [first, ...remaining].flatMap((response) => response.data || []);
+async function loadEquipmentPage(page = 1) {
+  try {
+    const filters = buildEquipmentFilters();
+    const params = new URLSearchParams({
+      page,
+      pageSize: 20,
+      ...filters,
+    });
+    const response = await api(`/api/equipment?${params}`);
+    equipment = response.data || [];
+    updatePaginationState(response.pagination);
+    renderPortal();
+  } catch (error) {
+    document.querySelector('#inventory-content').innerHTML = `<div class="inventory-empty">${escapeHtml(error.message)}</div>`;
+    toast(error.message, true);
+  }
+}
+
+function buildEquipmentFilters() {
+  const status = document.querySelector('#status-filter').value;
+  const category = document.querySelector('#category-filter').value;
+  const query = document.querySelector('#equipment-search').value.trim().toLowerCase();
+  
+  const filters = {};
+  if (status) filters.status = status;
+  if (category) filters.category = category;
+  // Note: Search query filtering happens on frontend since API doesn't have text search
+  return filters;
+}
+
+function updatePaginationState(pagination) {
+  window.currentPagination = pagination;
+}
+
+async function goToPage(page) {
+  if (page < 1 || page > (window.currentPagination?.totalPages || 1)) return;
+  window.currentPage = page;
+  await loadEquipmentPage(page);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function statusInfo(item) {
@@ -83,16 +116,20 @@ function statusInfo(item) {
 
 function filteredEquipment() {
   const query = document.querySelector('#equipment-search').value.trim().toLowerCase();
-  const status = document.querySelector('#status-filter').value;
-  const category = document.querySelector('#category-filter').value;
+  // Filter by search query on current page data (full filtering handled by API)
+  if (!query) return equipment;
   return equipment.filter((item) => {
     const haystack = [item.equipmentCode, item.name, item.manufacturer, item.model, item.location?.site, item.location?.building, item.location?.zone].filter(Boolean).join(' ').toLowerCase();
-    return (!query || haystack.includes(query)) && (!status || item.status === status) && (!category || item.category === category);
+    return haystack.includes(query);
   });
 }
 
 function renderPortal() {
-  document.querySelector('#metric-total').textContent = equipment.length;
+  const pagination = window.currentPagination || {};
+  const totalEquipment = pagination.totalCount || 0;
+  
+  document.querySelector('#metric-total').textContent = totalEquipment;
+  // Note: These counts are estimates based on current page, ideally would need separate API calls for all statuses
   document.querySelector('#metric-operational').textContent = equipment.filter((item) => item.status === 'Operational' && !item.isOverdue).length;
   document.querySelector('#metric-attention').textContent = equipment.filter((item) => item.status === 'Faulty' || item.isOverdue).length;
   document.querySelector('#metric-maintenance').textContent = equipment.filter((item) => item.status === 'Under Maintenance').length;
@@ -102,18 +139,56 @@ function renderPortal() {
 function renderInventory() {
   const items = filteredEquipment();
   const content = document.querySelector('#inventory-content');
-  if (!items.length) { content.innerHTML = '<div class="inventory-empty">No equipment matches the current filters.</div>'; return; }
+  const pagination = window.currentPagination || {};
+  
+  if (!items.length) { 
+    content.innerHTML = '<div class="inventory-empty">No equipment matches the current filters.</div>';
+    renderPaginationControls();
+    return; 
+  }
+  
   const rows = items.map((item) => {
     const state = statusInfo(item);
     const location = [item.location?.site, item.location?.building, item.location?.zone].filter(Boolean).join(' · ');
     return `<tr><td class="equipment-cell"><strong>${escapeHtml(item.equipmentCode)}</strong><span>${escapeHtml(item.name)}</span></td><td class="subtle-cell">${escapeHtml(item.category)}<br>${escapeHtml(item.manufacturer)} · ${escapeHtml(item.model)}</td><td><span class="status-badge ${state.tone}">${escapeHtml(state.label)}</span></td><td class="subtle-cell">${escapeHtml(location)}</td><td><div class="maintenance-due ${item.isOverdue ? 'overdue' : ''}"><strong>${formatDate(item.nextMaintenanceDate)}</strong><span>${item.isOverdue ? `${item.daysOverdue} days overdue` : item.nextMaintenanceDate ? 'Scheduled' : 'Awaiting service'}</span></div></td><td><div class="row-actions"><button class="action-button" data-action="qr" data-id="${item.id}" ${item.status === 'Retired' ? 'disabled' : ''}>QR</button><button class="action-button" data-action="edit" data-id="${item.id}" ${item.status === 'Retired' ? 'disabled' : ''}>Edit</button><details class="more-menu"><summary aria-label="More actions">•••</summary><div class="menu-popover"><button data-action="profile" data-id="${item.id}" ${item.status === 'Retired' ? 'disabled' : ''}>Open mobile profile</button><button data-action="retire" data-id="${item.id}" class="danger-text" ${item.status === 'Retired' ? 'disabled' : ''}>Retire equipment</button></div></details></div></td></tr>`;
   }).join('');
+  
   const cards = items.map((item) => {
     const state = statusInfo(item);
     const location = [item.location?.site, item.location?.building, item.location?.zone].filter(Boolean).join(' · ');
     return `<article class="inventory-card"><div class="inventory-card-head"><div><span class="inventory-card-code">${escapeHtml(item.equipmentCode)}</span><h3>${escapeHtml(item.name)}</h3></div><span class="status-badge ${state.tone}">${escapeHtml(state.label)}</span></div><div class="inventory-card-meta"><span>${escapeHtml(item.category)}<br>${escapeHtml(item.manufacturer)}</span><span>${escapeHtml(location)}<br>${item.isOverdue ? `<b style="color:var(--red)">${item.daysOverdue} days overdue</b>` : formatDate(item.nextMaintenanceDate)}</span></div><div class="inventory-card-actions"><button class="action-button" data-action="qr" data-id="${item.id}" ${item.status === 'Retired' ? 'disabled' : ''}>View QR</button><button class="action-button" data-action="edit" data-id="${item.id}" ${item.status === 'Retired' ? 'disabled' : ''}>Edit asset</button></div></article>`;
   }).join('');
-  content.innerHTML = `<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>Equipment</th><th>Type / model</th><th>Condition</th><th>Location</th><th>Next maintenance</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="inventory-cards">${cards}</div><div class="results-meta">Showing ${items.length} of ${equipment.length} registered assets</div>`;
+  
+  const resultsText = pagination.totalCount 
+    ? `Showing ${items.length} of ${pagination.totalCount} registered assets (Page ${pagination.page} of ${pagination.totalPages})`
+    : `Showing ${items.length} registered assets`;
+  
+  content.innerHTML = `<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>Equipment</th><th>Type / model</th><th>Condition</th><th>Location</th><th>Next maintenance</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="inventory-cards">${cards}</div><div class="results-meta">${resultsText}</div>`;
+  renderPaginationControls();
+}
+
+function renderPaginationControls() {
+  const pagination = window.currentPagination || {};
+  const paginationHtml = document.querySelector('#pagination-controls');
+  
+  if (!paginationHtml) return;
+  
+  const prevBtn = paginationHtml.querySelector('#prev-page');
+  const nextBtn = paginationHtml.querySelector('#next-page');
+  const pageInfo = paginationHtml.querySelector('#page-info');
+  
+  const totalPages = pagination.totalPages || 1;
+  const currentPage = pagination.page || 1;
+  
+  if (pageInfo) pageInfo.textContent = totalPages > 1 ? `Page ${currentPage} of ${totalPages}` : '';
+  if (prevBtn) {
+    prevBtn.disabled = currentPage <= 1;
+    prevBtn.onclick = () => goToPage(currentPage - 1);
+  }
+  if (nextBtn) {
+    nextBtn.disabled = currentPage >= totalPages;
+    nextBtn.onclick = () => goToPage(currentPage + 1);
+  }
 }
 
 function renderTechnicianOptions() {
@@ -174,7 +249,7 @@ loginForm.addEventListener('submit', async (event) => {
 equipmentForm.addEventListener('input', updateLabelPreview);
 equipmentForm.addEventListener('submit', async (event) => {
   event.preventDefault(); const wasEditing = Boolean(editingId); const submit = document.querySelector('#equipment-submit'); const errorBox = document.querySelector('#equipment-form-error'); submit.disabled = true; submit.textContent = wasEditing ? 'Saving changes…' : 'Creating equipment…'; errorBox.hidden = true;
-  try { const response = await api(wasEditing ? `/api/equipment/${editingId}` : '/api/equipment', { method: wasEditing ? 'PATCH' : 'POST', body: JSON.stringify(equipmentPayload()) }); const id = response.data.id; equipmentDialog.close(); await loadPortal(); toast(wasEditing ? `${response.data.equipmentCode} updated successfully.` : `${response.data.equipmentCode} created successfully.`); if (!wasEditing) await showQRFor(id); }
+  try { const response = await api(wasEditing ? `/api/equipment/${editingId}` : '/api/equipment', { method: wasEditing ? 'PATCH' : 'POST', body: JSON.stringify(equipmentPayload()) }); const id = response.data.id; equipmentDialog.close(); await loadEquipmentPage(window.currentPage || 1); toast(wasEditing ? `${response.data.equipmentCode} updated successfully.` : `${response.data.equipmentCode} created successfully.`); if (!wasEditing) await showQRFor(id); }
   catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; }
   finally { submit.disabled = false; submit.textContent = wasEditing ? 'Save changes' : 'Save equipment & generate QR'; }
 });
@@ -185,13 +260,27 @@ document.querySelector('#inventory-content').addEventListener('click', async (ev
     if (button.dataset.action === 'qr') await showQRFor(item.id);
     if (button.dataset.action === 'edit') openEquipmentForm(item);
     if (button.dataset.action === 'profile') { const qr = await api(`/api/equipment/${item.id}/qr`); window.open(qr.data.profileUrl, '_blank', 'noopener'); }
-    if (button.dataset.action === 'retire') { const approved = await askConfirmation({ eyebrow: 'Retire equipment', title: `Retire ${item.equipmentCode}?`, message: 'The current QR will become a retired tombstone and new service records can no longer be added.', acceptLabel: 'Retire equipment' }); if (!approved) return; await api(`/api/equipment/${item.id}/retire`, { method: 'POST', body: JSON.stringify({ reason: 'Retired from admin portal' }) }); toast(`${item.equipmentCode} retired.`); await loadPortal(); }
+    if (button.dataset.action === 'retire') { const approved = await askConfirmation({ eyebrow: 'Retire equipment', title: `Retire ${item.equipmentCode}?`, message: 'The current QR will become a retired tombstone and new service records can no longer be added.', acceptLabel: 'Retire equipment' }); if (!approved) return; await api(`/api/equipment/${item.id}/retire`, { method: 'POST', body: JSON.stringify({ reason: 'Retired from admin portal' }) }); toast(`${item.equipmentCode} retired.`); await loadEquipmentPage(window.currentPage || 1); }
   } catch (error) { toast(error.message, true); }
 });
 
 document.querySelector('#open-create').addEventListener('click', () => openEquipmentForm());
 document.querySelector('#logout-button').addEventListener('click', () => { clearSession(); location.reload(); });
-document.querySelectorAll('#equipment-search, #status-filter, #category-filter').forEach((control) => control.addEventListener('input', renderInventory));
+
+// Filter controls - reload page when changed
+document.querySelector('#status-filter').addEventListener('change', async () => {
+  window.currentPage = 1;
+  await loadEquipmentPage(1);
+});
+
+document.querySelector('#category-filter').addEventListener('change', async () => {
+  window.currentPage = 1;
+  await loadEquipmentPage(1);
+});
+
+// Search filter - filter on current page only
+document.querySelector('#equipment-search').addEventListener('input', renderInventory);
+
 document.querySelectorAll('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeDialog}`).close()));
 document.querySelector('#print-qr').addEventListener('click', () => window.print());
 document.querySelector('#regenerate-qr').addEventListener('click', async () => {
