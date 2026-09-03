@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    background-color: #f4f4f4;
+    color: #161616;
+  }
+  
+  code, pre, .font-mono {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+
+  /* Reset form elements to avoid system native look */
+  input, select, textarea, button {
+    font-family: inherit;
+  }
+}
+
+/* Carbon Design Custom Utilities */
+.carbon-input {
+  background-color: #f4f4f4;
+  border-bottom: 2px solid #8d8d8d;
+  color: #161616;
+  font-size: 0.875rem;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+  padding-left: 0.875rem;
+  padding-right: 0.875rem;
+  border-radius: 0px;
+  outline: none;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.carbon-input:focus {
+  border-color: #0f62fe;
+  background-color: #ffffff;
+}
+
+.carbon-input-error {
+  border-color: #da1e28 !important;
+  background-color: #fff0f1 !important;
+}
+
+.carbon-btn-primary {
+  background-color: #0f62fe;
+  color: #ffffff;
+  border-radius: 0px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.625rem 1.25rem;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.carbon-btn-primary:hover:not(:disabled) {
+  background-color: #0353e9;
+}
+
+.carbon-btn-secondary {
+  background-color: #393939;
+  color: #ffffff;
+  border-radius: 0px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.625rem 1.25rem;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.carbon-btn-secondary:hover:not(:disabled) {
+  background-color: #4c4c4c;
+}
+
+.carbon-btn-danger {
+  background-color: #da1e28;
+  color: #ffffff;
+  border-radius: 0px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.625rem 1.25rem;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.carbon-btn-danger:hover:not(:disabled) {
+  background-color: #b81921;
+}
+
+.carbon-btn-tertiary {
+  background-color: transparent;
+  color: #0f62fe;
+  border: 1px solid #0f62fe;
+  border-radius: 0px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.carbon-btn-tertiary:hover:not(:disabled) {
+  background-color: #0f62fe;
+  color: #ffffff;
+}
+
+/* Print specific styles for QR Label Lab */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  header, nav, footer, .no-print {
+    display: none !important;
+  }
+  
+  .print-only-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+    page-break-inside: avoid;
+  }
+  
+  .qr-label-card {
+    border: 2px solid #000 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+}

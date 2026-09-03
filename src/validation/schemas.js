@@ -75,8 +75,12 @@ const regenerateQRSchema = z.object({
   reason: z.string().optional(),
 });
 
-// replace body = full new equipment definition (same as create)
-const replaceEquipmentSchema = createEquipmentSchema;
+const linkReplacementSchema = z.object({
+  replacementEquipmentId: z.string().min(1).optional(),
+  reason: z.string().optional(),
+});
+
+const replaceEquipmentSchema = z.union([linkReplacementSchema, createEquipmentSchema]);
 
 // ── Maintenance ───────────────────────────────────────────────────────────────
 

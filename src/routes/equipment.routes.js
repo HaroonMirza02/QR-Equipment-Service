@@ -54,10 +54,10 @@ router.post(
   create
 );
 
-// GET /api/equipment/:id/qr — Admin only. Registered before /:id.
+// GET /api/equipment/:id/qr — Admin | Technician | Viewer. Registered before /:id.
 router.get(
   '/:id/qr',
-  roleGuard('Admin'),
+  roleGuard('Admin', 'Technician', 'Viewer'),
   getQR
 );
 

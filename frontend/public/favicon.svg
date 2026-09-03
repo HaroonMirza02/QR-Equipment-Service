@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="0" fill="#161616"/>
+  <rect x="3" y="3" width="26" height="26" fill="none" stroke="#0f62fe" stroke-width="2"/>
+  <!-- QR Outer Corner Boxes -->
+  <rect x="7" y="7" width="7" height="7" fill="#0f62fe"/>
+  <rect x="9" y="9" width="3" height="3" fill="#ffffff"/>
+  
+  <rect x="18" y="7" width="7" height="7" fill="#0f62fe"/>
+  <rect x="20" y="9" width="3" height="3" fill="#ffffff"/>
+
+  <rect x="7" y="18" width="7" height="7" fill="#0f62fe"/>
+  <rect x="9" y="20" width="3" height="3" fill="#ffffff"/>
+
+  <!-- Center Equipment Core Dot -->
+  <rect x="18" y="18" width="7" height="7" fill="#ffffff"/>
+  <rect x="20" y="20" width="3" height="3" fill="#0f62fe"/>
+</svg>

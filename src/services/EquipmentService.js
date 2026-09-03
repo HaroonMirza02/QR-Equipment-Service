@@ -157,7 +157,7 @@ class EquipmentService {
 
   // ── Replace ──────────────────────────────────────────────────────────────────
 
-  async replace(tenantId, oldEquipmentId, userId, newEquipmentBody) {
+  async replace(tenantId, oldEquipmentId, userId, body) {
     const oldEquipment = await this._loadOwned(tenantId, oldEquipmentId);
 
     if (oldEquipment.replacedByEquipmentId) {
@@ -167,27 +167,39 @@ class EquipmentService {
       throw new AppError('Equipment has already been retired without a replacement', 409, 'ALREADY_RETIRED');
     }
 
-    // Check new code uniqueness before touching old record
-    await this._assertCodeUnique(tenantId, newEquipmentBody.equipmentCode);
+    let newEquipment;
 
-    // Create new equipment first (insert new, update old second — per A2)
-    const { token, qrCodeUrl } = await QRService.issueNew();
+    if (body.replacementEquipmentId) {
+      // Case A: Link to an existing successor asset
+      const successor = await this._loadOwned(tenantId, body.replacementEquipmentId);
+      if (successor.id === oldEquipment.id) {
+        throw new AppError('Equipment cannot replace itself', 400, 'INVALID_REPLACEMENT');
+      }
+      successor.replacedFromEquipmentId = oldEquipment._id;
+      await successor.save();
+      newEquipment = successor;
+    } else {
+      // Case B: Create new replacement equipment definition
+      await this._assertCodeUnique(tenantId, body.equipmentCode);
 
-    const newEquipment = new Equipment({
-      tenantId,
-      ...newEquipmentBody,
-      qrToken: token,
-      qrStatus: 'active',
-      qrTokenHistory: [],
-      status: 'Operational',
-      replacedFromEquipmentId: oldEquipment._id,
-    });
-    await newEquipment.save();
+      const { token } = await QRService.issueNew();
+
+      newEquipment = new Equipment({
+        tenantId,
+        ...body,
+        qrToken: token,
+        qrStatus: 'active',
+        qrTokenHistory: [],
+        status: 'Operational',
+        replacedFromEquipmentId: oldEquipment._id,
+      });
+      await newEquipment.save();
+    }
 
     // Now update old record
     oldEquipment.status = 'Retired';
     oldEquipment.replacedByEquipmentId = newEquipment._id;
-    QRService.markReplaced(oldEquipment, userId, 'replaced by ' + newEquipment.equipmentCode);
+    QRService.markReplaced(oldEquipment, userId, body.reason || (`replaced by ${newEquipment.equipmentCode}`));
     await oldEquipment.save();
 
     return {
@@ -196,10 +208,7 @@ class EquipmentService {
         equipmentCode: oldEquipment.equipmentCode,
         status: oldEquipment.status,
       },
-      newEquipment: {
-        ...sanitize(newEquipment),
-        qrCodeUrl,
-      },
+      newEquipment: sanitize(newEquipment),
     };
   }
 

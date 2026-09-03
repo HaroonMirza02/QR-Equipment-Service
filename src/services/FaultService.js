@@ -73,6 +73,10 @@ class FaultService {
     });
 
     await fault.save();
+
+    // Auto-update equipment status to 'Faulty'
+    await Equipment.findByIdAndUpdate(equipmentId, { status: 'Faulty' });
+
     return sanitize(fault);
   }
 
@@ -120,6 +124,24 @@ class FaultService {
     }
 
     await fault.save();
+
+    // If fault is resolved, check if any open faults remain for this equipment asset
+    if (newStatus === 'Resolved') {
+      const activeFaults = await FaultIncident.countDocuments({
+        tenantId,
+        equipmentId: fault.equipmentId,
+        status: { $ne: 'Resolved' },
+      });
+
+      if (activeFaults === 0) {
+        const eq = await Equipment.findById(fault.equipmentId);
+        if (eq && eq.status === 'Faulty') {
+          eq.status = 'Operational';
+          await eq.save();
+        }
+      }
+    }
+
     return sanitize(fault);
   }
 
