@@ -10,8 +10,8 @@ export const Header: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="no-print bg-[#161616] text-white border-b border-[#393939] sticky top-0 z-30 font-['IBM_Plex_Sans',sans-serif]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+    <header className="no-print bg-[#262626] text-white border-b border-[#393939] sticky top-0 z-30 font-['IBM_Plex_Sans',sans-serif]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between relative">
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <div className="w-8 h-8 rounded-none bg-[#161616] border-2 border-[#0f62fe] flex items-center justify-center text-[#0f62fe] group-hover:bg-[#0f62fe] group-hover:text-white transition-colors">
@@ -30,7 +30,7 @@ export const Header: React.FC = () => {
         </Link>
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center h-full">
+        <nav className="hidden md:flex items-center h-full md:absolute md:left-1/2 md:-translate-x-1/2">
           {isAuthenticated && (
             <>
               <Link
@@ -44,17 +44,19 @@ export const Header: React.FC = () => {
                 <List className="w-3.5 h-3.5" />
                 Equipment Register
               </Link>
-              <Link
-                to="/admin"
-                className={`flex items-center gap-2 px-4 h-14 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 ${
-                  isActive('/admin')
-                    ? 'bg-[#262626] text-white border-[#0f62fe]'
-                    : 'text-[#c6c6c6] hover:bg-[#262626] hover:text-white border-transparent'
-                }`}
-              >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                Admin Portal
-              </Link>
+              {user?.role === 'Admin' && (
+                <Link
+                  to="/admin"
+                  className={`flex items-center gap-2 px-4 h-14 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 ${
+                    isActive('/admin')
+                      ? 'bg-[#262626] text-white border-[#0f62fe]'
+                      : 'text-[#c6c6c6] hover:bg-[#262626] hover:text-white border-transparent'
+                  }`}
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  Admin Portal
+                </Link>
+              )}
             </>
           )}
 

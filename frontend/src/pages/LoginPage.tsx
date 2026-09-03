@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Cpu, ShieldCheck, Lock, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Lock, AlertCircle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -48,14 +48,11 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] bg-[#f4f4f4] text-[#161616] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-['IBM_Plex_Sans',sans-serif]">
+    <div className="min-h-[calc(100vh-3.5rem)] bg-[#f4f4f4] text-[#161616] flex flex-col justify-start pt-10 pb-16 px-4 sm:px-6 lg:px-8 font-['IBM_Plex_Sans',sans-serif]">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="w-12 h-12 rounded-none bg-[#0f62fe] flex items-center justify-center text-white mx-auto shadow-none mb-3">
-          <Cpu className="w-7 h-7" />
-        </div>
         <h2 className="text-2xl font-bold tracking-tight text-[#161616]">PlantOps Portal</h2>
         <p className="mt-1 text-xs text-[#525252]">
-          IBM Carbon Design System · Industrial Equipment Passport Management
+          Industrial Equipment Service &amp; QR Management System
         </p>
       </div>
 

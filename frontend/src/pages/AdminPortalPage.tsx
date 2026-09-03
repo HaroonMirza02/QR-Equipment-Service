@@ -272,13 +272,13 @@ export const AdminPortalPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f4f4f4] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6 font-['IBM_Plex_Sans',sans-serif]">
       {/* Carbon Admin Banner Header */}
-      <div className="bg-[#161616] text-white p-6 sm:p-8 rounded-none border border-[#393939] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white text-[#161616] p-6 sm:p-7 rounded-none border border-[#e0e0e0] border-l-4 border-l-[#0f62fe] shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <span className="text-[11px] font-mono font-bold text-[#78a9ff] uppercase tracking-widest block mb-1">
+          <span className="text-[11px] font-mono font-bold text-[#0f62fe] uppercase tracking-widest block mb-1">
             Plant Operations Console
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Equipment Control Portal</h1>
-          <p className="text-[#a8a8a8] text-xs sm:text-sm mt-1 max-w-2xl">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#161616]">Equipment Control Portal</h1>
+          <p className="text-[#525252] text-xs sm:text-sm mt-1 max-w-2xl">
             Register machinery, record maintenance logs, report fault incidents, manage QR tokens, and handle lifecycle replacements.
           </p>
         </div>
@@ -418,7 +418,7 @@ export const AdminPortalPage: React.FC = () => {
           <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#161616] text-[#f4f4f4] text-xs font-semibold uppercase tracking-wider border-b border-[#393939]">
+                <tr className="bg-[#e5e5e5] text-[#161616] text-xs font-bold uppercase tracking-wider border-b-2 border-[#8d8d8d]">
                   <th className="py-3 px-4">Code</th>
                   <th className="py-3 px-4">Equipment Name</th>
                   <th className="py-3 px-4">Category</th>
