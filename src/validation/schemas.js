@@ -21,10 +21,19 @@ const loginSchema = z.object({
 
 // ── Equipment ─────────────────────────────────────────────────────────────────
 
+const optionalObjectIdString = z
+  .union([
+    z.string().regex(/^[0-9a-fA-F]{24}$/, 'Must be a valid ObjectId (24 hex chars)'),
+    z.literal(''),
+    z.null(),
+  ])
+  .optional()
+  .transform((val) => (val === '' || !val ? null : val));
+
 const locationSchema = z.object({
-  site: z.string().min(1),
-  building: z.string().min(1),
-  zone: z.string().min(1),
+  site: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : 'Main Plant')),
+  building: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : 'Building A')),
+  zone: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : 'Zone 1')),
 });
 
 const EQUIPMENT_CATEGORIES = ['Pump', 'Generator', 'Compressor', 'HVAC', 'Electrical', 'Other'];
@@ -38,13 +47,13 @@ const createEquipmentSchema = z.object({
   manufacturer: z.string().min(1),
   model: z.string().min(1),
   serialNumber: z.string().optional(),
-  installationDate: isoDate,
-  location: locationSchema,
+  installationDate: isoDate.optional().transform((v) => (v && !isNaN(Date.parse(v)) ? v : new Date().toISOString())),
+  location: locationSchema.optional().default({ site: 'Main Plant', building: 'Building A', zone: 'Zone 1' }),
   maintenanceIntervalDays: z
     .number({ invalid_type_error: 'maintenanceIntervalDays must be a number' })
     .int()
     .positive('maintenanceIntervalDays must be a positive integer'),
-  assignedTechnicianId: objectIdString.optional(),
+  assignedTechnicianId: optionalObjectIdString,
   isPublicVisible: z.boolean().optional(),
   notes: z.string().optional(),
 });
@@ -59,7 +68,7 @@ const patchEquipmentSchema = z
     serialNumber: z.string().optional(),
     location: locationSchema.optional(),
     maintenanceIntervalDays: z.number().int().positive().optional(),
-    assignedTechnicianId: objectIdString.nullable().optional(),
+    assignedTechnicianId: optionalObjectIdString,
     isPublicVisible: z.boolean().optional(),
     notes: z.string().nullable().optional(),
   })

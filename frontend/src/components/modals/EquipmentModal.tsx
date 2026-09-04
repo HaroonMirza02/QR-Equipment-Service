@@ -129,18 +129,18 @@ export const EquipmentModal: React.FC<EquipmentModalProps> = ({
         model: model.trim(),
         serialNumber: serialNumber.trim() || undefined,
         location: {
-          site: site.trim(),
-          building: building.trim(),
-          zone: zone.trim(),
+          site: site.trim() || 'Main Plant',
+          building: building.trim() || 'Building A',
+          zone: zone.trim() || 'Zone 1',
         },
-        maintenanceIntervalDays: Number(maintenanceIntervalDays),
-        assignedTechnicianId: assignedTechnicianId || undefined,
+        maintenanceIntervalDays: Number(maintenanceIntervalDays) || 90,
+        assignedTechnicianId: assignedTechnicianId && assignedTechnicianId.trim() ? assignedTechnicianId.trim() : undefined,
         isPublicVisible,
         notes: notes.trim() || undefined,
       };
 
       if (!isEditing) {
-        payload.installationDate = installationDate;
+        payload.installationDate = installationDate || new Date().toISOString();
       }
 
       await onSave(payload);
