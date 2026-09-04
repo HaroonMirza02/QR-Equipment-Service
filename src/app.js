@@ -32,7 +32,30 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// ── Static files (QR images) ─────────────────────────────────────────────────
+// ── Static files & dynamic QR images ─────────────────────────────────────────
+const QRCode = require('qrcode');
+
+app.get('/static/qr/:file', async (req, res, next) => {
+  try {
+    const token = req.params.file.replace(/\.png$/, '');
+    const baseUrl = (process.env.BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+    const targetUrl = `${baseUrl}/equipment/${token}`;
+
+    const pngBuffer = await QRCode.toBuffer(targetUrl, {
+      type: 'png',
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 300,
+    });
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(pngBuffer);
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use('/static', express.static(path.join(__dirname, '..', 'public')));
 
 // ── Mobile QR landing page ───────────────────────────────────────────────────

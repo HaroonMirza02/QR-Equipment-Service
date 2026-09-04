@@ -6,7 +6,7 @@ const { success } = require('../utils/response');
 
 async function listDemoEquipment(req, res, next) {
   try {
-    const enabled = process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_DIRECTORY === 'true';
+    const enabled = process.env.ENABLE_DEMO_DIRECTORY !== 'false';
     if (!enabled) {
       throw new AppError('Demo equipment directory is not enabled', 404, 'NOT_FOUND');
     }
