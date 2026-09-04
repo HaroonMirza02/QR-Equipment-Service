@@ -15,7 +15,13 @@ function getQrStorageDir() {
 }
 
 function getBaseUrl() {
-  return (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  return (
+    process.env.FRONTEND_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    (process.env.BASE_URL && !process.env.BASE_URL.includes('localhost') ? process.env.BASE_URL : null) ||
+    process.env.BASE_URL ||
+    'http://localhost:3000'
+  ).replace(/\/$/, '');
 }
 
 /**
@@ -23,8 +29,12 @@ function getBaseUrl() {
  */
 function ensureStorageDir() {
   const dir = getQrStorageDir();
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (_e) {
+    // Ignore read-only filesystem errors in serverless containers
   }
   return dir;
 }
@@ -46,26 +56,28 @@ class QRService {
   }
 
   /**
-   * Generate a QR code PNG for the given token and save it to local storage.
+   * Generate a QR code PNG for the given token and save it to local storage if writable.
    * Returns the public URL path (relative to BASE_URL).
    *
    * Per Assumption A7: the frontend must prepend BASE_URL when rendering.
    */
   async generateQRImage(token) {
-    const dir = ensureStorageDir();
     const filename = `${token}.png`;
-    const filepath = path.join(dir, filename);
 
-    // Encode the human-facing mobile route, not the JSON API endpoint. The
-    // opaque token remains stable for the lifetime of the equipment label.
-    const scanUrl = `${getBaseUrl()}/equipment/${token}`;
+    try {
+      const dir = ensureStorageDir();
+      const filepath = path.join(dir, filename);
+      const scanUrl = `${getBaseUrl()}/equipment/${token}`;
 
-    await QRCode.toFile(filepath, scanUrl, {
-      type: 'png',
-      errorCorrectionLevel: 'M',
-      margin: 2,
-      width: 300,
-    });
+      await QRCode.toFile(filepath, scanUrl, {
+        type: 'png',
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        width: 300,
+      });
+    } catch (err) {
+      console.warn(`[qr] Storage directory is read-only (${err.code || err.message}); serving QR dynamically on-the-fly`);
+    }
 
     // Return the static-file URL path
     return `${getBaseUrl()}/static/qr/${filename}`;
