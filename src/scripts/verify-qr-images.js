@@ -12,6 +12,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const jsQR = require('jsqr');
 const { PNG } = require('pngjs');
+const { connectDB } = require('../config/database');
 const Equipment = require('../models/Equipment');
 
 const QR_DIR = path.join(__dirname, '..', '..', process.env.QR_STORAGE_PATH || 'public/qr');
@@ -25,7 +26,7 @@ function decode(filePath) {
 }
 
 async function verify() {
-  await mongoose.connect(process.env.MONGODB_URI);
+  await connectDB();
   const equipment = await Equipment.find({})
     .select('equipmentCode qrToken qrTokenHistory')
     .lean();
@@ -57,6 +58,6 @@ async function verify() {
 
 verify().catch(async (error) => {
   console.error(`[qr-test] ${error.message}`);
-  await mongoose.disconnect().catch(() => {});
+  await mongoose.disconnect().catch(() => { });
   process.exit(1);
 });

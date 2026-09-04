@@ -168,6 +168,7 @@ class EquipmentService {
     }
 
     let newEquipment;
+    let newQrCodeUrl = null;
 
     if (body.replacementEquipmentId) {
       // Case A: Link to an existing successor asset
@@ -182,7 +183,8 @@ class EquipmentService {
       // Case B: Create new replacement equipment definition
       await this._assertCodeUnique(tenantId, body.equipmentCode);
 
-      const { token } = await QRService.issueNew();
+      const { token, qrCodeUrl } = await QRService.issueNew();
+      newQrCodeUrl = qrCodeUrl;
 
       newEquipment = new Equipment({
         tenantId,
@@ -202,13 +204,18 @@ class EquipmentService {
     QRService.markReplaced(oldEquipment, userId, body.reason || (`replaced by ${newEquipment.equipmentCode}`));
     await oldEquipment.save();
 
+    const sanitizedNew = sanitize(newEquipment);
+    if (newQrCodeUrl) {
+      sanitizedNew.qrCodeUrl = newQrCodeUrl;
+    }
+
     return {
       retiredEquipment: {
         id: oldEquipment._id.toString(),
         equipmentCode: oldEquipment.equipmentCode,
         status: oldEquipment.status,
       },
-      newEquipment: sanitize(newEquipment),
+      newEquipment: sanitizedNew,
     };
   }
 

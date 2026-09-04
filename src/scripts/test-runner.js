@@ -19,6 +19,35 @@
 require('dotenv').config();
 const http = require('http');
 const https = require('https');
+const mongoose = require('mongoose');
+const { connectDB } = require('../config/database');
+const Equipment = require('../models/Equipment');
+const MaintenanceEvent = require('../models/MaintenanceEvent');
+const FaultIncident = require('../models/FaultIncident');
+
+async function cleanTestFixtures() {
+  try {
+    await connectDB();
+    const testCodes = [
+      'TEST-NEW-001',
+      'TEST-QR-REGEN-001',
+      'TEST-OLD-001',
+      'TEST-NEW-REPLACEMENT-001',
+      'TEST-SCAN-LIVE-001',
+      'TEST-PRIVATE-SCAN-001',
+    ];
+    const testEquips = await Equipment.find({ equipmentCode: { $in: testCodes } }).select('_id').lean();
+    const ids = testEquips.map((e) => e._id);
+    if (ids.length) {
+      await MaintenanceEvent.deleteMany({ equipmentId: { $in: ids } });
+      await FaultIncident.deleteMany({ equipmentId: { $in: ids } });
+      await Equipment.deleteMany({ _id: { $in: ids } });
+    }
+    await mongoose.disconnect();
+  } catch (_err) {
+    // best-effort cleanup
+  }
+}
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -183,7 +212,7 @@ async function testEquipmentList() {
   assertBody('List equipment without auth', res, 401);
 
   // 200 — admin can list
-  res = await request('GET', '/api/equipment', null, { Authorization: `Bearer ${adminToken}` });
+  res = await request('GET', '/api/equipment?pageSize=100', null, { Authorization: `Bearer ${adminToken}` });
   assert('List equipment → 200', res.status === 200);
   assert('List equipment → data is array', Array.isArray(res.body?.data));
   assert('List equipment → has pagination', typeof res.body?.pagination?.totalCount === 'number');
@@ -198,7 +227,7 @@ async function testEquipmentList() {
   assert('List equipment → found operational item', !!equipmentId);
 
   overdueEquipId = items.find((e) => e.equipmentCode === 'PUMP-002')?.id || '';
-  faultyEquipId  = items.find((e) => e.equipmentCode === 'PUMP-003')?.id || '';
+  faultyEquipId = items.find((e) => e.equipmentCode === 'PUMP-003')?.id || '';
 
   // Viewer can list
   res = await request('GET', '/api/equipment', null, { Authorization: `Bearer ${viewerToken}` });
@@ -1044,6 +1073,7 @@ async function run() {
   }
 
   try {
+    await cleanTestFixtures();
     await testAuth();
     await testEquipmentList();
     await testEquipmentOverdue();

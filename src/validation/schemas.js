@@ -76,7 +76,7 @@ const regenerateQRSchema = z.object({
 });
 
 const linkReplacementSchema = z.object({
-  replacementEquipmentId: z.string().min(1).optional(),
+  replacementEquipmentId: objectIdString,
   reason: z.string().optional(),
 });
 
