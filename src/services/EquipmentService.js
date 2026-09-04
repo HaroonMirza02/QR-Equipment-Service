@@ -79,7 +79,13 @@ class EquipmentService {
       throw new AppError('Active QR is not available for retired equipment', 409, 'QR_NOT_ACTIVE');
     }
 
-    const baseUrl = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const baseUrl = (
+      process.env.FRONTEND_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      (process.env.BASE_URL && !process.env.BASE_URL.includes('localhost') ? process.env.BASE_URL : null) ||
+      process.env.BASE_URL ||
+      'http://localhost:3000'
+    ).replace(/\/$/, '');
     return {
       equipmentCode: equipment.equipmentCode,
       name: equipment.name,

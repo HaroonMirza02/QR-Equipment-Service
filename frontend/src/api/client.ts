@@ -58,6 +58,18 @@ export const resolveImageUrl = (url?: string): string => {
   return url;
 };
 
+export const resolveProfileUrl = (url?: string): string => {
+  if (!url) return '';
+  if (url.startsWith('/')) return url;
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    if (url.includes('/equipment/')) {
+      const token = url.split('/equipment/')[1];
+      return `${window.location.origin}/equipment/${token}`;
+    }
+  }
+  return url;
+};
+
 export const getStoredToken = (): string => {
   return localStorage.getItem(TOKEN_KEY) || '';
 };

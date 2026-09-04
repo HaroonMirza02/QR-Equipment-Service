@@ -4,7 +4,13 @@ const Equipment = require('../models/Equipment');
 const OverdueService = require('./OverdueService');
 
 function getBaseUrl() {
-  return (process.env.BACKEND_URL || process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  return (
+    process.env.FRONTEND_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    process.env.BACKEND_URL ||
+    process.env.BASE_URL ||
+    'http://localhost:3000'
+  ).replace(/\/$/, '');
 }
 
 class DemoService {

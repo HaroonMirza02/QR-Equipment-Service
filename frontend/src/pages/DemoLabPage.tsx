@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { apiClient, resolveImageUrl } from '../api/client';
+import { apiClient, resolveImageUrl, resolveProfileUrl } from '../api/client';
 import type { Equipment, EquipmentCategory, PaginationMeta } from '../types';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Pagination } from '../components/common/Pagination';
@@ -264,7 +264,7 @@ export const DemoLabPage: React.FC = () => {
                     </span>
                     {item.profileUrl && (
                       <a
-                        href={item.profileUrl}
+                        href={resolveProfileUrl(item.profileUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-[#0f62fe] hover:underline font-bold"

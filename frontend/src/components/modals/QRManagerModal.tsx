@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
-import { resolveImageUrl } from '../../api/client';
+import { resolveImageUrl, resolveProfileUrl } from '../../api/client';
 import { Download, RefreshCw, ExternalLink, QrCode } from 'lucide-react';
 
 interface QRData {
@@ -106,7 +106,7 @@ export const QRManagerModal: React.FC<QRManagerModalProps> = ({
           </a>
 
           <a
-            href={qrData.profileUrl}
+            href={resolveProfileUrl(qrData.profileUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 carbon-btn-tertiary text-xs sm:text-sm font-medium"
