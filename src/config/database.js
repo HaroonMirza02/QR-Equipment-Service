@@ -24,14 +24,27 @@ function isSrvDnsFailure(error, uri) {
 }
 
 async function connectDB() {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
   const uri = process.env.MONGODB_URI;
   const dbName = process.env.MONGODB_DB_NAME || 'qr_equipment';
   if (!uri) {
-    throw new Error('MONGODB_URI environment variable is not set');
+    throw new Error('MONGODB_URI environment variable is not set in Vercel settings');
   }
 
   try {
-    await mongoose.connect(uri, { dbName });
+    const fallbackServers = mongodbDnsServers();
+    if (fallbackServers.length) dns.setServers(fallbackServers);
+  } catch (_e) {
+    // Ignore if setServers fails in strict environment
+  }
+
+  try {
+    await mongoose.connect(uri, {
+      dbName,
+      serverSelectionTimeoutMS: 5000,
+    });
   } catch (error) {
     if (!isSrvDnsFailure(error, uri)) throw error;
 
@@ -42,7 +55,10 @@ async function connectDB() {
       `[db] MongoDB SRV lookup failed via the system resolver (${error.code}); retrying with configured DNS fallback`
     );
     dns.setServers(fallbackServers);
-    await mongoose.connect(uri, { dbName });
+    await mongoose.connect(uri, {
+      dbName,
+      serverSelectionTimeoutMS: 5000,
+    });
   }
 
   console.log('[db] connected to MongoDB');

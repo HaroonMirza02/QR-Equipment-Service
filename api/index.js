@@ -1,15 +1,13 @@
 'use strict';
 
+const mongoose = require('mongoose');
 const app = require('../src/app');
 const { connectDB } = require('../src/config/database');
 
-let isConnected = false;
-
 module.exports = async (req, res) => {
-  if (!isConnected) {
+  if (mongoose.connection.readyState !== 1) {
     try {
       await connectDB();
-      isConnected = true;
     } catch (err) {
       console.error('MongoDB connection error on Vercel:', err);
       return res.status(500).json({
