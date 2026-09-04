@@ -31,7 +31,13 @@ export class ApiError extends Error {
 }
 
 export const getApiBaseUrl = (): string => {
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    return '';
+  }
+  return 'http://localhost:3000';
 };
 
 export const resolveImageUrl = (url?: string): string => {

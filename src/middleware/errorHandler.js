@@ -9,8 +9,8 @@ function errorHandler(err, req, res, _next) {
   const code = err.code || 'INTERNAL_ERROR';
   const message = err.message || 'An unexpected error occurred';
 
-  if (process.env.NODE_ENV === 'development' && statusCode === 500) {
-    console.error('[error]', err);
+  if (statusCode === 500) {
+    console.error('[500 SERVER ERROR]', err);
   }
 
   res.status(statusCode).json({
