@@ -388,22 +388,20 @@ Roles: **Public** (anonymous QR scan) | **Viewer** (authenticated read-only) | *
 ### Field Restrictions for Public Role (A*)
 
 **Equipment profile** — returned fields:
-- `equipmentCode`, `name`, `category`, `manufacturer`, `model`, `serialNumber`
+- `equipmentCode`, `name`, `category`, `manufacturer`, `model`
 - `installationDate`, `location`
-- `status`, `maintenanceIntervalDays`, `nextMaintenanceDate`
+- `status`, `nextMaintenanceDate`
 - `isOverdue` (computed boolean), `daysOverdue` (computed int, 0 if not overdue)
 
-**Excluded from public**: `_id`, `qrToken`, `qrTokenHistory`, `assignedTechnicianId`, `notes`, `tenantId`, `qrStatus`, `replacedByEquipmentId`, `replacedFromEquipmentId`
+**Excluded from public**: `_id`, `qrToken`, `qrTokenHistory`, `assignedTechnicianId`, `serialNumber`, `maintenanceIntervalDays`, `notes`, `tenantId`, `qrStatus`, `replacedByEquipmentId`, `replacedFromEquipmentId`
 
 **Maintenance history** — returned for public:
-- Summary: `{ totalCount, lastMaintenanceDate, lastMaintenanceType }`
-- Latest ten: type, date, description, parts used, next recommended date, and technician name/specialty. No IDs or attachments.
+- `{ totalCount: Number, lastMaintenanceDate: Date|null, nextMaintenanceDate: Date|null, lastMaintenanceType: String|null }`
 
 **Fault history** — returned for public:
-- Summary: `{ openCount, highestOpenSeverity }`
-- Latest ten: reported date, severity, description, status, resolved date, and resolution notes. No reporter/resolver IDs.
+- `{ openCount: Number, highestOpenSeverity: String|null }`
 
-**Technician** — assigned technician name, specialty, and active/inactive status are returned. Phone and email remain private.
+**Technician** — nothing returned for public. The assigned technician's name is intentionally withheld because it constitutes PII in an industrial context and has no actionable value for an anonymous scanner.
 
 ---
 
@@ -427,30 +425,19 @@ Steps:
 3. Generate a new token via `generateToken()`.
 4. Set `qrToken = newToken`, `qrStatus = 'active'`.
 5. Generate and store new QR image. Return `qrCodeUrl`.
-6. Old token resolves to `QR_REVOKED`; it never reveals or redirects to the replacement token.
+6. Old token is now invalid — any scan of it will hit the `QR_NOT_FOUND` path (token not in `qrToken` field of any document, and history entries are not scanned-against).
 
 **Revoke semantics:** "Revoked" means the token string is moved out of the active `qrToken` field into `qrTokenHistory`. The equipment record is retained in full. There is no deletion. The revoke reason and actor are preserved. The equipment's `qrStatus` transitions to `revoked` only if it is being retired without a replacement (see 4.4). If regenerating, `qrStatus` stays `active` on the new token.
 
 ### 4.3 Scan of a Revoked or Retired Token
 
-A scan arrives at `GET /api/public/scan/:qrToken`. Resolution checks `qrToken` first and then `qrTokenHistory.token` for an explicit lifecycle state.
+A scan arrives at `GET /api/public/scan/:qrToken`. The lookup queries `{ qrToken: <value>, qrStatus: 'active' }`.
 
-**Case A — Token not found at all (never existed):**
+**Case A — Token not found at all (never existed, or was rotated out of active field):**
 Response: `404 { code: "QR_NOT_FOUND", message: "This QR code is not recognized." }`
 
 **Case B — Token found but `qrStatus = 'revoked'` (retired equipment, no successor):**
-Response:
-```json
-HTTP 200
-{
-  "status": "retired",
-  "code": "QR_RETIRED",
-  "message": "This equipment has been retired and is no longer in service.",
-  "retiredEquipmentCode": "PUMP-014",
-  "retiredEquipmentName": "Primary Transfer Pump",
-  "successor": null
-}
-```
+Response: `404 { code: "QR_NOT_FOUND", message: "This QR code is not recognized." }`
 
 **Case C — Token found but `qrStatus = 'replaced'` (equipment replaced by newer unit):**
 Response:
@@ -471,7 +458,7 @@ HTTP 200
 
 Note: The successor's `qrToken` value is **not** returned. Only the URL path (which contains it) is returned, and only because the QR URL is already public knowledge once the new QR label exists. The decision to include this URL here is justified because withholding it would make the replaced-equipment flow useless to a scanner.
 
-**Why 200 not 404 for revoked/replaced?** A 404 implies the resource never existed. For retired/replaced equipment, the resource existed — its status is meaningful information. Returning 200 with a structured status field allows the frontend to render a proper informational screen rather than a generic error page.
+**Why 200 not 404 for replaced?** A 404 implies the resource never existed. For replaced equipment with a successor, the successor is meaningful information. Returning 200 with a structured status field allows the frontend to render a proper informational screen rather than a generic error page. A revoked or retired token with no successor is `404 QR_NOT_FOUND`.
 
 ### 4.4 Replace Equipment (`POST /api/equipment/:id/replace`)
 

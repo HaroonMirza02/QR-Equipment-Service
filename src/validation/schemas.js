@@ -89,7 +89,7 @@ const linkReplacementSchema = z.object({
   reason: z.string().optional(),
 });
 
-const replaceEquipmentSchema = z.union([linkReplacementSchema, createEquipmentSchema]);
+const replaceEquipmentSchema = z.union([createEquipmentSchema, linkReplacementSchema]);
 
 // ── Maintenance ───────────────────────────────────────────────────────────────
 

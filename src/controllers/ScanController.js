@@ -22,9 +22,7 @@ async function scan(req, res, next) {
         throw new AppError('This QR code is not recognized', 404, 'QR_NOT_FOUND');
 
       case 'active':
-      case 'retired':
       case 'replaced':
-      case 'revoked':
       case 'restricted':
         return success(res, result.data, 200);
 
