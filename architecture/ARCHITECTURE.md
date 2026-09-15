@@ -112,8 +112,9 @@ Mobile Browser                    Express (Public Router)    ScanService        
 Key notes:
 - `id` and `assignedTechnicianId` are **never** included in the public response.
 - `qrToken` is also **never** echoed back — the response contains only derived/safe fields.
-- The response includes summaries plus the latest ten public-safe maintenance and fault records.
-- Assigned technician name and specialty are included; contact details and all internal IDs remain private.
+- Maintenance history is summarized (count + last date + last type), not full records.
+- Fault history is summarized (open count + highest open severity), not full records with resolution notes.
+- **Technician** — nothing is returned for public. The assigned technician's name is intentionally withheld, it is PII in an industrial context and has no actionable value for an anonymous scanner.
 
 ---
 
