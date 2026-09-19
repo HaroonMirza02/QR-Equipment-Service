@@ -122,3 +122,22 @@ export interface ApiResponse<T> {
     details?: Array<{ field?: string; message: string }>;
   };
 }
+
+export interface EquipmentStats {
+  total: number;
+  operational: number;
+  totalOperational: number;
+  needsAttention: number;
+  faulty: number;
+  overdue: number;
+  inMaintenance: number;
+  retired: number;
+  breakdown: {
+    operationalOnSchedule: number;
+    operationalOverdue: number;
+    faulty: number;
+    inMaintenance: number;
+    retired: number;
+  };
+}
+

@@ -23,7 +23,7 @@ export const EquipmentListPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<EquipmentCategory | ''>('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchEquipment = useCallback(async (page: number) => {
+  const fetchEquipment = useCallback(async (page: number, search: string = searchQuery) => {
     setLoading(true);
     setError('');
 
@@ -34,6 +34,7 @@ export const EquipmentListPage: React.FC = () => {
       });
       if (statusFilter) params.append('status', statusFilter);
       if (categoryFilter) params.append('category', categoryFilter);
+      if (search.trim()) params.append('search', search.trim());
 
       const [equipRes, techRes] = await Promise.all([
         apiClient<Equipment[]>(`/api/equipment?${params}`),
@@ -52,11 +53,18 @@ export const EquipmentListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, categoryFilter]);
+  }, [statusFilter, categoryFilter, searchQuery]);
 
   useEffect(() => {
-    fetchEquipment(currentPage);
-  }, [fetchEquipment, currentPage]);
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, categoryFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchEquipment(currentPage, searchQuery);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [fetchEquipment, currentPage, searchQuery, statusFilter, categoryFilter]);
 
   const handleOpenPassport = async (equipmentId: string) => {
     setLoadingPassportId(equipmentId);
@@ -97,24 +105,8 @@ export const EquipmentListPage: React.FC = () => {
     { value: 'Other', label: 'Other' },
   ];
 
-  // Client-side text search on current page records
-  const filteredEquipment = equipmentList.filter((item) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    const haystack = [
-      item.equipmentCode,
-      item.name,
-      item.manufacturer,
-      item.model,
-      item.location?.site,
-      item.location?.building,
-      item.location?.zone,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(q);
-  });
+  // Server-side filtered equipment
+  const filteredEquipment = equipmentList;
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'Not scheduled';

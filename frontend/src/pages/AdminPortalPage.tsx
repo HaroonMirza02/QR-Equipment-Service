@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../api/client';
-import type { Equipment, EquipmentCategory, EquipmentStatus, PaginationMeta, Technician, FaultIncident } from '../types';
+import type { Equipment, EquipmentCategory, EquipmentStatus, PaginationMeta, Technician, FaultIncident, EquipmentStats } from '../types';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Pagination } from '../components/common/Pagination';
 import { CarbonSelect, type CarbonSelectOption } from '../components/common/CarbonSelect';
@@ -29,6 +29,7 @@ import {
 
 export const AdminPortalPage: React.FC = () => {
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
+  const [stats, setStats] = useState<EquipmentStats | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>({});
   const [loading, setLoading] = useState(true);
@@ -67,7 +68,16 @@ export const AdminPortalPage: React.FC = () => {
     profileUrl: string;
   } | null>(null);
 
-  const fetchPortalData = useCallback(async (page: number) => {
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await apiClient<EquipmentStats>('/api/equipment/stats');
+      if (res.data) setStats(res.data);
+    } catch (_err) {
+      // Non-blocking fallback
+    }
+  }, []);
+
+  const fetchPortalData = useCallback(async (page: number, search: string = searchQuery) => {
     setLoading(true);
     setError('');
 
@@ -78,6 +88,7 @@ export const AdminPortalPage: React.FC = () => {
       });
       if (statusFilter) params.append('status', statusFilter);
       if (categoryFilter) params.append('category', categoryFilter);
+      if (search.trim()) params.append('search', search.trim());
 
       const [equipRes, techRes] = await Promise.all([
         apiClient<Equipment[]>(`/api/equipment?${params}`),
@@ -96,11 +107,22 @@ export const AdminPortalPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, categoryFilter]);
+  }, [statusFilter, categoryFilter, searchQuery]);
 
   useEffect(() => {
-    fetchPortalData(currentPage);
-  }, [fetchPortalData, currentPage]);
+    fetchStats();
+  }, [fetchStats]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, categoryFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPortalData(currentPage, searchQuery);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [fetchPortalData, currentPage, searchQuery, statusFilter, categoryFilter]);
 
   const statusOptions: CarbonSelectOption[] = [
     { value: '', label: 'All Statuses' },
@@ -120,11 +142,11 @@ export const AdminPortalPage: React.FC = () => {
     { value: 'Other', label: 'Other' },
   ];
 
-  // Calculations for Metric Tiles
-  const totalCount = pagination.totalCount || equipmentList.length;
-  const operationalCount = equipmentList.filter((e) => e.status === 'Operational' && !e.isOverdue).length;
-  const attentionCount = equipmentList.filter((e) => e.status === 'Faulty' || e.isOverdue).length;
-  const maintenanceCount = equipmentList.filter((e) => e.status === 'Under Maintenance').length;
+  // Calculations for Metric Tiles from database statistics
+  const totalCount = stats ? stats.total : (pagination.totalCount || equipmentList.length);
+  const operationalCount = stats ? stats.operational : equipmentList.filter((e) => e.status === 'Operational' && !e.isOverdue).length;
+  const attentionCount = stats ? stats.needsAttention : equipmentList.filter((e) => e.status === 'Faulty' || e.isOverdue).length;
+  const maintenanceCount = stats ? stats.inMaintenance : equipmentList.filter((e) => e.status === 'Under Maintenance').length;
 
   // Save / Update Equipment
   const handleSaveEquipment = async (payload: Partial<Equipment>) => {
@@ -142,6 +164,7 @@ export const AdminPortalPage: React.FC = () => {
       setToastMessage({ msg: `New equipment '${payload.equipmentCode}' created & QR issued!` });
     }
     fetchPortalData(currentPage);
+    fetchStats();
   };
 
   // Log Maintenance Event
@@ -152,6 +175,7 @@ export const AdminPortalPage: React.FC = () => {
     });
     setToastMessage({ msg: 'Maintenance service log recorded successfully.' });
     fetchPortalData(currentPage);
+    fetchStats();
   };
 
   // Report Fault Incident
@@ -162,6 +186,7 @@ export const AdminPortalPage: React.FC = () => {
     });
     setToastMessage({ msg: 'Fault incident reported; equipment marked Faulty.', isError: true });
     fetchPortalData(currentPage);
+    fetchStats();
   };
 
   // Resolve Fault Incident
@@ -172,6 +197,7 @@ export const AdminPortalPage: React.FC = () => {
     });
     setToastMessage({ msg: 'Fault marked as resolved.' });
     fetchPortalData(currentPage);
+    fetchStats();
   };
 
   // Retire Equipment
@@ -182,6 +208,7 @@ export const AdminPortalPage: React.FC = () => {
     });
     setToastMessage({ msg: 'Equipment decommissioned and retired.', isError: true });
     fetchPortalData(currentPage);
+    fetchStats();
   };
 
   // Replace Equipment
@@ -195,6 +222,7 @@ export const AdminPortalPage: React.FC = () => {
     });
     setToastMessage({ msg: 'Asset replaced and successor linked.' });
     fetchPortalData(currentPage);
+    fetchStats();
   };
 
   // View or Regenerate QR (Dynamically fetch QR URL & token from API)
@@ -231,26 +259,11 @@ export const AdminPortalPage: React.FC = () => {
       setSelectedQRData({ ...selectedQRData, qrCodeUrl: res.data.qrCodeUrl });
     }
     fetchPortalData(currentPage);
+    fetchStats();
   };
 
-  // Client-side search filter
-  const filteredList = equipmentList.filter((item) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    const haystack = [
-      item.equipmentCode,
-      item.name,
-      item.manufacturer,
-      item.model,
-      item.location?.site,
-      item.location?.building,
-      item.location?.zone,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(q);
-  });
+  // Server-side filtered equipment list
+  const filteredList = equipmentList;
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '—';
@@ -305,7 +318,7 @@ export const AdminPortalPage: React.FC = () => {
             <Cpu className="w-4 h-4 text-[#0f62fe]" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-[#161616] mt-1">{totalCount}</div>
-          <span className="text-[11px] text-[#525252] block truncate">Current page inventory</span>
+          <span className="text-[11px] text-[#525252] block truncate">Complete register ({stats?.retired || 0} retired)</span>
         </div>
 
         <div className="bg-white p-4 rounded-none border border-[#e0e0e0]">
@@ -318,7 +331,7 @@ export const AdminPortalPage: React.FC = () => {
           <div className="text-2xl sm:text-3xl font-bold font-mono text-[#198038] mt-1">
             {operationalCount}
           </div>
-          <span className="text-[11px] text-[#525252] block truncate">In active service</span>
+          <span className="text-[11px] text-[#525252] block truncate">{stats ? `On schedule (${stats.totalOperational} total)` : 'In active service'}</span>
         </div>
 
         <div className="bg-white p-4 rounded-none border border-[#e0e0e0]">
@@ -331,7 +344,7 @@ export const AdminPortalPage: React.FC = () => {
           <div className="text-2xl sm:text-3xl font-bold font-mono text-[#da1e28] mt-1">
             {attentionCount}
           </div>
-          <span className="text-[11px] text-[#525252] block truncate">Faulty or Overdue</span>
+          <span className="text-[11px] text-[#525252] block truncate">{stats ? `${stats.faulty} faulty · ${stats.overdue} overdue` : 'Faulty or Overdue'}</span>
         </div>
 
         <div className="bg-white p-4 rounded-none border border-[#e0e0e0]">

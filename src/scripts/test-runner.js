@@ -28,7 +28,12 @@ const FaultIncident = require('../models/FaultIncident');
 async function cleanTestFixtures() {
   try {
     await connectDB();
-    const testEquips = await Equipment.find({ equipmentCode: /^TEST-/ }).select('_id').lean();
+    const testEquips = await Equipment.find({
+      $or: [
+        { equipmentCode: /^TEST-/ },
+        { equipmentCode: 'DUMMY' },
+      ],
+    }).select('_id').lean();
     const ids = testEquips.map((e) => e._id);
     if (ids.length) {
       await MaintenanceEvent.deleteMany({ equipmentId: { $in: ids } });

@@ -6,7 +6,7 @@ const { success, paginated, buildPagination, parsePagination } = require('../uti
 async function list(req, res, next) {
   try {
     const { page, pageSize, skip } = parsePagination(req.query);
-    const { status, category, assignedTechnicianId } = req.query;
+    const { status, category, assignedTechnicianId, search } = req.query;
 
     // Technician role may only filter by their own assignedTechnicianId
     let techFilter = assignedTechnicianId;
@@ -18,12 +18,22 @@ async function list(req, res, next) {
       status,
       category,
       assignedTechnicianId: techFilter,
+      search,
       page,
       pageSize,
       skip,
     });
 
     return paginated(res, items, buildPagination(page, pageSize, totalCount));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function stats(req, res, next) {
+  try {
+    const data = await EquipmentService.stats(req.user.tenantId);
+    return success(res, data);
   } catch (err) {
     next(err);
   }
@@ -121,4 +131,4 @@ async function regenerateQR(req, res, next) {
   }
 }
 
-module.exports = { list, listOverdue, getById, getQR, create, patch, retire, replace, regenerateQR };
+module.exports = { list, listOverdue, stats, getById, getQR, create, patch, retire, replace, regenerateQR };

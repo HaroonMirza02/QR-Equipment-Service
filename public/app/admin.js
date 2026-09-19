@@ -55,14 +55,26 @@ function showPortal() {
 async function loadPortal() {
   document.querySelector('#inventory-content').innerHTML = '<div class="inventory-empty">Loading equipment register…</div>';
   try {
-    const [technicianResponse] = await Promise.all([api('/api/technicians?pageSize=100&status=active')]);
+    const [technicianResponse, statsResponse] = await Promise.all([
+      api('/api/technicians?pageSize=100&status=active'),
+      api('/api/equipment/stats').catch(() => ({ success: true, data: null })),
+    ]);
     technicians = technicianResponse.data || [];
+    window.currentStats = statsResponse.data || null;
     renderTechnicianOptions(); 
     await loadEquipmentPage(1);
   } catch (error) {
     document.querySelector('#inventory-content').innerHTML = `<div class="inventory-empty">${escapeHtml(error.message)}</div>`;
     toast(error.message, true);
   }
+}
+
+async function refreshStats() {
+  try {
+    const statsResponse = await api('/api/equipment/stats');
+    window.currentStats = statsResponse.data || null;
+    renderMetrics();
+  } catch (_e) {}
 }
 
 async function loadEquipmentPage(page = 1) {
@@ -86,12 +98,12 @@ async function loadEquipmentPage(page = 1) {
 function buildEquipmentFilters() {
   const status = document.querySelector('#status-filter').value;
   const category = document.querySelector('#category-filter').value;
-  const query = document.querySelector('#equipment-search').value.trim().toLowerCase();
+  const query = document.querySelector('#equipment-search').value.trim();
   
   const filters = {};
   if (status) filters.status = status;
   if (category) filters.category = category;
-  // Note: Search query filtering happens on frontend since API doesn't have text search
+  if (query) filters.search = query;
   return filters;
 }
 
@@ -115,24 +127,22 @@ function statusInfo(item) {
 }
 
 function filteredEquipment() {
-  const query = document.querySelector('#equipment-search').value.trim().toLowerCase();
-  // Filter by search query on current page data (full filtering handled by API)
-  if (!query) return equipment;
-  return equipment.filter((item) => {
-    const haystack = [item.equipmentCode, item.name, item.manufacturer, item.model, item.location?.site, item.location?.building, item.location?.zone].filter(Boolean).join(' ').toLowerCase();
-    return haystack.includes(query);
-  });
+  return equipment;
+}
+
+function renderMetrics() {
+  const stats = window.currentStats;
+  const pagination = window.currentPagination || {};
+  const totalEquipment = stats ? stats.total : (pagination.totalCount || 0);
+  
+  document.querySelector('#metric-total').textContent = totalEquipment;
+  document.querySelector('#metric-operational').textContent = stats ? stats.operational : equipment.filter((item) => item.status === 'Operational' && !item.isOverdue).length;
+  document.querySelector('#metric-attention').textContent = stats ? stats.needsAttention : equipment.filter((item) => item.status === 'Faulty' || item.isOverdue).length;
+  document.querySelector('#metric-maintenance').textContent = stats ? stats.inMaintenance : equipment.filter((item) => item.status === 'Under Maintenance').length;
 }
 
 function renderPortal() {
-  const pagination = window.currentPagination || {};
-  const totalEquipment = pagination.totalCount || 0;
-  
-  document.querySelector('#metric-total').textContent = totalEquipment;
-  // Note: These counts are estimates based on current page, ideally would need separate API calls for all statuses
-  document.querySelector('#metric-operational').textContent = equipment.filter((item) => item.status === 'Operational' && !item.isOverdue).length;
-  document.querySelector('#metric-attention').textContent = equipment.filter((item) => item.status === 'Faulty' || item.isOverdue).length;
-  document.querySelector('#metric-maintenance').textContent = equipment.filter((item) => item.status === 'Under Maintenance').length;
+  renderMetrics();
   renderInventory();
 }
 

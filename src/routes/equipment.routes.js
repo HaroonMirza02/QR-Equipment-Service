@@ -4,6 +4,7 @@ const express = require('express');
 const {
   list,
   listOverdue,
+  stats,
   getById,
   getQR,
   create,
@@ -28,9 +29,16 @@ const router = express.Router();
 // All equipment routes require authentication
 router.use(authenticate);
 
-// ── IMPORTANT: /overdue MUST be registered before /:id ─────────────────────
-// If /:id is first, Express matches "overdue" as an id value.
+// ── IMPORTANT: /overdue and /stats MUST be registered before /:id ──────────
+// If /:id is first, Express matches "overdue" or "stats" as an id value.
 // (ARCHITECTURE.md §5.5 route-ordering note)
+
+// GET /api/equipment/stats  — Admin | Technician | Viewer
+router.get(
+  '/stats',
+  roleGuard('Admin', 'Technician', 'Viewer'),
+  stats
+);
 
 // GET /api/equipment/overdue  — Admin | Technician | Viewer
 router.get(

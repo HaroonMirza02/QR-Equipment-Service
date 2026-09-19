@@ -28,7 +28,7 @@ function sanitize(doc) {
 class EquipmentService {
   // ── List ────────────────────────────────────────────────────────────────────
 
-  async list(tenantId, { status, category, assignedTechnicianId, page, pageSize, skip }) {
+  async list(tenantId, { status, category, assignedTechnicianId, search, page, pageSize, skip }) {
     const filter = { tenantId };
     if (status) filter.status = status;
     if (category) filter.category = category;
@@ -39,12 +39,121 @@ class EquipmentService {
       filter.assignedTechnicianId = assignedTechnicianId;
     }
 
+    if (search && search.trim()) {
+      const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
+      filter.$or = [
+        { equipmentCode: regex },
+        { name: regex },
+        { manufacturer: regex },
+        { model: regex },
+        { serialNumber: regex },
+        { 'location.site': regex },
+        { 'location.building': regex },
+        { 'location.zone': regex },
+      ];
+    }
+
     const [docs, totalCount] = await Promise.all([
-      Equipment.find(filter).sort({ createdAt: -1 }).skip(skip).limit(pageSize).lean(),
+      Equipment.find(filter).sort({ equipmentCode: 1 }).skip(skip).limit(pageSize).lean(),
       Equipment.countDocuments(filter),
     ]);
 
     return { items: docs.map((d) => OverdueService.annotate(sanitizeFromLean(d))), totalCount };
+  }
+
+  // ── Statistics (Complete Dataset Aggregation) ───────────────────────────────
+
+  async stats(tenantId) {
+    const now = new Date();
+    const tId = new mongoose.Types.ObjectId(tenantId);
+
+    const aggregation = await Equipment.aggregate([
+      { $match: { tenantId: tId } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          retired: {
+            $sum: { $cond: [{ $eq: ['$status', 'Retired'] }, 1, 0] },
+          },
+          inMaintenance: {
+            $sum: { $cond: [{ $eq: ['$status', 'Under Maintenance'] }, 1, 0] },
+          },
+          faulty: {
+            $sum: { $cond: [{ $eq: ['$status', 'Faulty'] }, 1, 0] },
+          },
+          totalOperational: {
+            $sum: { $cond: [{ $eq: ['$status', 'Operational'] }, 1, 0] },
+          },
+          operationalOverdue: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$status', 'Operational'] },
+                    { $ne: ['$nextMaintenanceDate', null] },
+                    { $lt: ['$nextMaintenanceDate', now] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          operationalOnSchedule: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$status', 'Operational'] },
+                    {
+                      $or: [
+                        { $eq: ['$nextMaintenanceDate', null] },
+                        { $gte: ['$nextMaintenanceDate', now] },
+                      ],
+                    },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    const result = aggregation[0] || {
+      total: 0,
+      retired: 0,
+      inMaintenance: 0,
+      faulty: 0,
+      totalOperational: 0,
+      operationalOverdue: 0,
+      operationalOnSchedule: 0,
+    };
+
+    // Precedence: Retired -> Under Maintenance -> Faulty / Overdue (Needs Attention) -> Operational (On Schedule)
+    const needsAttention = result.faulty + result.operationalOverdue;
+
+    return {
+      total: result.total,
+      operational: result.operationalOnSchedule,
+      totalOperational: result.totalOperational,
+      needsAttention,
+      faulty: result.faulty,
+      overdue: result.operationalOverdue,
+      inMaintenance: result.inMaintenance,
+      retired: result.retired,
+      breakdown: {
+        operationalOnSchedule: result.operationalOnSchedule,
+        operationalOverdue: result.operationalOverdue,
+        faulty: result.faulty,
+        inMaintenance: result.inMaintenance,
+        retired: result.retired,
+      },
+    };
   }
 
   // ── Overdue list ─────────────────────────────────────────────────────────────
