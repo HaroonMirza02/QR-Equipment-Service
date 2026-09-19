@@ -3,6 +3,7 @@
 const Equipment = require('../models/Equipment');
 const MaintenanceEvent = require('../models/MaintenanceEvent');
 const FaultIncident = require('../models/FaultIncident');
+const Technician = require('../models/Technician');
 const OverdueService = require('./OverdueService');
 
 const SEVERITY_ORDER = ['Low', 'Medium', 'High', 'Critical'];
@@ -87,9 +88,11 @@ class ScanService {
       };
     }
 
-    const [maintenanceSummary, faultSummary] = await Promise.all([
+    const [maintenanceSummary, faultSummary, maintenanceHistory, faultHistory] = await Promise.all([
       this._getMaintenanceSummary(equipment._id, equipment.tenantId),
       this._getFaultSummary(equipment._id, equipment.tenantId),
+      this._getMaintenanceHistory(equipment._id, equipment.tenantId),
+      this._getFaultHistory(equipment._id, equipment.tenantId),
     ]);
 
     const { isOverdue, daysOverdue } = OverdueService.compute(equipment.nextMaintenanceDate);
@@ -110,8 +113,50 @@ class ScanService {
         daysOverdue,
         maintenanceSummary,
         faultSummary,
+        maintenanceHistory,
+        faultHistory,
       },
     };
+  }
+
+  async _getMaintenanceHistory(equipmentId, tenantId) {
+    const events = await MaintenanceEvent.find({ equipmentId, tenantId })
+      .sort({ date: -1 })
+      .populate('performedByTechnicianId', 'name specialty')
+      .lean();
+
+    return events.map((ev) => ({
+      id: ev._id.toString(),
+      type: ev.type,
+      date: ev.date,
+      description: ev.description,
+      partsUsed: ev.partsUsed || [],
+      nextRecommendedDate: ev.nextRecommendedDate,
+      technician: ev.performedByTechnicianId
+        ? {
+            name: ev.performedByTechnicianId.name,
+            specialty: ev.performedByTechnicianId.specialty,
+          }
+        : null,
+    }));
+  }
+
+  async _getFaultHistory(equipmentId, tenantId) {
+    const faults = await FaultIncident.find({ equipmentId, tenantId })
+      .sort({ reportedDate: -1 })
+      .lean();
+
+    return faults.map((f) => ({
+      id: f._id.toString(),
+      severity: f.severity,
+      status: f.status,
+      title: `${f.severity} Priority Fault`,
+      description: f.description,
+      reportedDate: f.reportedDate,
+      resolvedAt: f.resolvedDate,
+      resolvedDate: f.resolvedDate,
+      resolutionNotes: f.resolutionNotes,
+    }));
   }
 
   async _getMaintenanceSummary(equipmentId, tenantId) {
