@@ -24,8 +24,10 @@ function decode(filePath) {
   return jsQR(pixels, png.width, png.height, { inversionAttempts: 'dontInvert' })?.data || null;
 }
 
+const { connectDB } = require('../config/database');
+
 async function verify() {
-  await mongoose.connect(process.env.MONGODB_URI);
+  await connectDB();
   const equipment = await Equipment.find({})
     .select('equipmentCode qrToken qrTokenHistory')
     .lean();

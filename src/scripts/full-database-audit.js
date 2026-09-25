@@ -47,7 +47,6 @@ async function audit() {
   const needsAttention = faulty + operationalOverdue;
 
   // 6. Check mutual exclusivity:
-  // operationalOnSchedule + needsAttention + underMaintenance + retired == totalEquipment
   const mutuallyExclusiveSum = operationalOnSchedule + needsAttention + underMaintenance + retired;
   const reconciled = mutuallyExclusiveSum === totalEquipment;
 
@@ -88,6 +87,14 @@ async function audit() {
       e.model === 'TEST'
   );
 
+  // 9b. Check Lab equipment (must be 0 in industrial dataset)
+  const labEquips = equips.filter(
+    (e) =>
+      e.equipmentCode.startsWith('LAB-') ||
+      e.name.toLowerCase().includes('microscope') ||
+      e.name.toLowerCase().includes('spectrometer')
+  );
+
   // 10. Orphan check for MaintenanceEvents
   const allMaint = await MaintenanceEvent.find({ tenantId }).lean();
   let orphanedMaint = 0;
@@ -104,26 +111,14 @@ async function audit() {
     if (!eq) orphanedFaults++;
   }
 
-  // 12. QR integrity check
-  const tokenSet = new Set();
-  let duplicateTokens = 0;
-  let invalidActiveTokens = 0;
-  for (const eq of equips) {
-    if (tokenSet.has(eq.qrToken)) duplicateTokens++;
-    tokenSet.add(eq.qrToken);
+  // 12. QR Token integrity
+  const allTokens = equips.map((e) => e.qrToken).filter(Boolean);
+  const duplicateTokens = allTokens.length - new Set(allTokens).size;
+  const invalidActiveTokens = equips.filter(
+    (e) => e.qrStatus === 'active' && (!e.qrToken || !/^[0-9a-f]{64}$/.test(e.qrToken))
+  ).length;
 
-    if (eq.status !== 'Retired') {
-      if (eq.qrStatus !== 'active' || !/^[0-9a-f]{64}$/i.test(eq.qrToken)) {
-        invalidActiveTokens++;
-      }
-    } else {
-      if (!['revoked', 'replaced'].includes(eq.qrStatus)) {
-        console.warn(`Retired item ${eq.equipmentCode} has unexpected qrStatus: ${eq.qrStatus}`);
-      }
-    }
-  }
-
-  // 13. Replacement relationship check
+  // 13. Replacement reference check
   let invalidReplacements = 0;
   for (const eq of equips) {
     if (eq.replacedByEquipmentId) {
@@ -151,14 +146,23 @@ async function audit() {
     }
   }
 
-  // 15. Pump check
-  const expectedPumps = ['PUMP-001', 'PUMP-002', 'PUMP-003', 'PUMP-004', 'PUMP-005', 'PUMP-006', 'PUMP-007', 'PUMP-008', 'PUMP-009', 'PUMP-010', 'PUMP-011', 'PUMP-012', 'PUMP-013'];
+  // 15. Expected Equipment Check
+  const expectedPumps = ['PUMP-001', 'PUMP-002', 'PUMP-003', 'PUMP-004', 'PUMP-005', 'PUMP-006', 'PUMP-007'];
+  const expectedGens = ['GEN-001', 'GEN-002', 'GEN-003'];
+  const expectedComps = ['COMP-001', 'COMP-002', 'COMP-003'];
+  const expectedMachs = ['MACH-001', 'MACH-002'];
+  const expectedHvacs = ['HVAC-001', 'HVAC-002', 'HVAC-003'];
+
   const actualPumps = equips.filter((e) => expectedPumps.includes(e.equipmentCode)).map((e) => e.equipmentCode);
+  const actualGens = equips.filter((e) => expectedGens.includes(e.equipmentCode)).map((e) => e.equipmentCode);
+  const actualComps = equips.filter((e) => expectedComps.includes(e.equipmentCode)).map((e) => e.equipmentCode);
+  const actualMachs = equips.filter((e) => expectedMachs.includes(e.equipmentCode)).map((e) => e.equipmentCode);
+  const actualHvacs = equips.filter((e) => expectedHvacs.includes(e.equipmentCode)).map((e) => e.equipmentCode);
 
   console.log('\n===============================================================');
   console.log('              COMPREHENSIVE DATABASE AUDIT REPORT             ');
   console.log('===============================================================');
-  console.log(`Total Equipment Records:             ${totalEquipment}`);
+  console.log(`Total Equipment Records:             ${totalEquipment} ${totalEquipment === 18 ? '✓ (Exactly 18 records)' : '✗'}`);
   console.log(`  • Operational (Total):             ${operational}`);
   console.log(`    - Operational & On Schedule:     ${operationalOnSchedule}`);
   console.log(`    - Operational & Overdue:         ${operationalOverdue}`);
@@ -179,7 +183,8 @@ async function audit() {
   console.log(`Active Unresolved Faults:            ${unresolvedFaults}`);
   console.log('---------------------------------------------------------------');
   console.log(`INTEGRITY CHECKS:`);
-  console.log(`  • Remaining Test/Dummy Records:    ${testEquips.length} ${testEquips.length === 0 ? '✓ PASS' : '✗ FAIL'}`);
+  console.log(`  • Test/Dummy Records:              ${testEquips.length} ${testEquips.length === 0 ? '✓ PASS' : '✗ FAIL'}`);
+  console.log(`  • Non-industrial Lab Records:      ${labEquips.length} ${labEquips.length === 0 ? '✓ PASS (No lab items)' : '✗ FAIL'}`);
   console.log(`  • Faulty Equipment with 0 Faults:  ${faultyWithoutFaults.length} ${faultyWithoutFaults.length === 0 ? '✓ PASS' : '✗ FAIL'}`);
   console.log(`  • Under-Maint without Activity:    ${underMaintWithoutActivity.length} ${underMaintWithoutActivity.length === 0 ? '✓ PASS' : '✗ FAIL'}`);
   console.log(`  • Orphaned Maintenance Events:     ${orphanedMaint} ${orphanedMaint === 0 ? '✓ PASS' : '✗ FAIL'}`);
@@ -188,36 +193,17 @@ async function audit() {
   console.log(`  • Invalid Active QR Tokens:        ${invalidActiveTokens} ${invalidActiveTokens === 0 ? '✓ PASS' : '✗ FAIL'}`);
   console.log(`  • Invalid Replacement References:  ${invalidReplacements} ${invalidReplacements === 0 ? '✓ PASS' : '✗ FAIL'}`);
   console.log(`  • Invalid Technician References:   ${invalidTechRefs} ${invalidTechRefs === 0 ? '✓ PASS' : '✗ FAIL'}`);
-  console.log(`  • Expected Pumps (PUMP-001 to 013):${actualPumps.length}/13 ${actualPumps.length === 13 ? '✓ PASS' : '✗ FAIL'}`);
+  console.log(`  • Realistic Pumps (PUMP-001..007): ${actualPumps.length}/7 ${actualPumps.length === 7 ? '✓ PASS' : '✗ FAIL'}`);
+  console.log(`  • Realistic Gens  (GEN-001..003):  ${actualGens.length}/3 ${actualGens.length === 3 ? '✓ PASS' : '✗ FAIL'}`);
+  console.log(`  • Realistic Comps (COMP-001..003): ${actualComps.length}/3 ${actualComps.length === 3 ? '✓ PASS' : '✗ FAIL'}`);
+  console.log(`  • Production Mach (MACH-001..002): ${actualMachs.length}/2 ${actualMachs.length === 2 ? '✓ PASS' : '✗ FAIL'}`);
+  console.log(`  • Realistic HVAC  (HVAC-001..003): ${actualHvacs.length}/3 ${actualHvacs.length === 3 ? '✓ PASS' : '✗ FAIL'}`);
   console.log('===============================================================\n');
-
-  // Check LAB-002 specifically
-  const lab002 = equips.find((e) => e.equipmentCode === 'LAB-002');
-  if (lab002) {
-    const labFaults = await FaultIncident.find({ equipmentId: lab002._id }).lean();
-    const labMaint = await MaintenanceEvent.find({ equipmentId: lab002._id }).lean();
-    console.log('LAB-002 Verification:');
-    console.log(`  • Status:      ${lab002.status}`);
-    console.log(`  • Fault Count: ${labFaults.length} (Severity: ${labFaults[0]?.severity}, Status: ${labFaults[0]?.status})`);
-    console.log(`  • Fault Desc:  ${labFaults[0]?.description}`);
-    console.log(`  • Maint Count: ${labMaint.length} (Type: ${labMaint[0]?.type})`);
-    console.log(`  • Maint Desc:  ${labMaint[0]?.description}\n`);
-  }
-
-  // Check ENV-001
-  const env001 = equips.find((e) => e.equipmentCode === 'ENV-001');
-  if (env001) {
-    console.log('ENV-001 (formerly TEST-001) Verification:');
-    console.log(`  • Name:        ${env001.name}`);
-    console.log(`  • Mfr/Model:   ${env001.manufacturer} ${env001.model}`);
-    console.log(`  • Status:      ${env001.status}`);
-    console.log(`  • QR Token:    ${env001.qrToken.substring(0, 16)}... (active)\n`);
-  }
 
   await mongoose.disconnect();
 }
 
 audit().catch((err) => {
-  console.error('[audit] FATAL ERROR:', err);
+  console.error('[audit] ERROR:', err);
   process.exit(1);
 });

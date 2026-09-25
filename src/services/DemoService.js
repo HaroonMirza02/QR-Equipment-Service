@@ -32,7 +32,7 @@ class DemoService {
     }
 
     const records = await Equipment.find(filter)
-      .sort({ createdAt: -1 })
+      .sort({ equipmentCode: 1 })
       .select('_id equipmentCode name category manufacturer model location status qrStatus qrToken qrTokenHistory nextMaintenanceDate isPublicVisible createdAt')
       .lean();
 
